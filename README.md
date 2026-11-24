@@ -1,1 +1,2 @@
 - 🧪 Estimates soil pH from your location using the free SoilGrids map (editable)
+- Soil pH is only an estimate (about 0.5 to 1 pH off). A soil test gives the exact value
