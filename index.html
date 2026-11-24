@@ -132,4 +132,41 @@ await fill(r.latitude,r.longitude);
 }catch(e){m.textContent='Place search failed. Check your internet.'}
 }
 </script>
+  let rfModel = null;
+
+async function loadRFModel() {
+  try {
+    const res = await fetch(`./model.json?v=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    rfModel = await res.json();
+    console.log("Loaded model classes:", rfModel.classes);
+  } catch (err) {
+    console.error("Failed to load model.json:", err);
+  }
+}
+
+function predictWithRF(features) {
+  if (!rfModel) return null;
+
+  const trees = rfModel.trees || rfModel.estimators || [];
+  const votes = new Array(rfModel.classes.length).fill(0);
+
+  for (const tree of trees) {
+    let node = 0;
+    while (tree.f[node] !== -2) {
+      node = features[tree.f[node]] <= tree.t[node] ? tree.l[node] : tree.r[node];
+    }
+    votes[tree.c[node]] += 1;
+  }
+
+  return rfModel.classes
+    .map((crop, idx) => ({
+      crop,
+      confidence: trees.length ? Math.round((votes[idx] / trees.length) * 100) : 0
+    }))
+    .sort((a, b) => b.confidence - a.confidence);
+}
+
+loadRFModel();
+        
 </body></html>
