@@ -1,78 +1,4 @@
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriVision - Regional Crop Recommendation</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
-    <header>
-        <h1>🌱 AgriVision</h1>
-        <p>Smart Agriculture and Crop Recommendation System</p>
-    </header>
-
-    <main>
-        <section id="regionalCrops">
-            <h2>🌾 Regional Crop Recommendation</h2>
-
-            <label for="district">Select Karnataka District:</label>
-
-            <select id="district">
-                <option value="">Select District</option>
-                <option value="Bagalkot">Bagalkot</option>
-                <option value="Ballari">Ballari</option>
-                <option value="Belagavi">Belagavi</option>
-                <option value="Bengaluru Rural">Bengaluru Rural</option>
-                <option value="Bengaluru Urban">Bengaluru Urban</option>
-                <option value="Bidar">Bidar</option>
-                <option value="Chamarajanagar">Chamarajanagar</option>
-                <option value="Chikkaballapur">Chikkaballapur</option>
-                <option value="Chikkamagaluru">Chikkamagaluru</option>
-                <option value="Chitradurga">Chitradurga</option>
-                <option value="Dakshina Kannada">Dakshina Kannada</option>
-                <option value="Davanagere">Davanagere</option>
-                <option value="Dharwad">Dharwad</option>
-                <option value="Gadag">Gadag</option>
-                <option value="Hassan">Hassan</option>
-                <option value="Haveri">Haveri</option>
-                <option value="Kalaburagi">Kalaburagi</option>
-                <option value="Kodagu">Kodagu</option>
-                <option value="Kolar">Kolar</option>
-                <option value="Koppal">Koppal</option>
-                <option value="Mandya">Mandya</option>
-                <option value="Mysuru">Mysuru</option>
-                <option value="Raichur">Raichur</option>
-                <option value="Ramanagara">Ramanagara</option>
-                <option value="Shivamogga">Shivamogga</option>
-                <option value="Tumakuru">Tumakuru</option>
-                <option value="Udupi">Udupi</option>
-                <option value="Uttara Kannada">Uttara Kannada</option>
-                <option value="Vijayanagara">Vijayanagara</option>
-                <option value="Vijayapura">Vijayapura</option>
-                <option value="Yadgir">Yadgir</option>
-            </select>
-
-            <button onclick="showRegionalCrops()">
-                Show Regional Crops
-            </button>
-
-            <div id="regionalCropResult">
-                Select a district to view suitable regional crops.
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <p>© 2026 AgriVision</p>
-    </footer>
-
-    <script src="script.js"></script>
-</body>
-</html>
-  
 function showRegionalCrops() {
     const district = document.getElementById("district").value;
     const result = document.getElementById("regionalCropResult");
@@ -82,16 +8,51 @@ function showRegionalCrops() {
         return;
     }
 
-    const crops = regionalCrops[district];
+    const crops = {
+        "Bagalkot": ["Jowar", "Maize", "Pulses"],
+        "Ballari": ["Cotton", "Paddy", "Groundnut"],
+        "Belagavi": ["Sugarcane", "Soybean", "Maize"],
+        "Bengaluru Rural": ["Ragi", "Maize", "Groundnut"],
+        "Bengaluru Urban": ["Vegetables", "Ragi", "Flowers"],
+        "Bidar": ["Tur Dal", "Soybean", "Jowar"],
+        "Chamarajanagar": ["Ragi", "Turmeric", "Sugarcane"],
+        "Chikkaballapur": ["Ragi", "Groundnut", "Grapes"],
+        "Chikkamagaluru": ["Coffee", "Pepper", "Paddy"],
+        "Chitradurga": ["Groundnut", "Maize", "Ragi"],
+        "Dakshina Kannada": ["Paddy", "Arecanut", "Coconut"],
+        "Davanagere": ["Maize", "Paddy", "Cotton"],
+        "Dharwad": ["Cotton", "Soybean", "Jowar"],
+        "Gadag": ["Jowar", "Bengal Gram", "Cotton"],
+        "Hassan": ["Coffee", "Potato", "Paddy"],
+        "Haveri": ["Cotton", "Maize", "Soybean"],
+        "Kalaburagi": ["Tur Dal", "Jowar", "Bengal Gram"],
+        "Kodagu": ["Coffee", "Pepper", "Cardamom"],
+        "Kolar": ["Tomato", "Ragi", "Mango"],
+        "Koppal": ["Paddy", "Jowar", "Cotton"],
+        "Mandya": ["Sugarcane", "Paddy", "Ragi"],
+        "Mysuru": ["Ragi", "Paddy", "Sugarcane"],
+        "Raichur": ["Paddy", "Cotton", "Tur Dal"],
+        "Ramanagara": ["Ragi", "Mango", "Coconut"],
+        "Shivamogga": ["Arecanut", "Paddy", "Maize"],
+        "Tumakuru": ["Coconut", "Ragi", "Groundnut"],
+        "Udupi": ["Paddy", "Arecanut", "Coconut"],
+        "Uttara Kannada": ["Arecanut", "Paddy", "Cashew"],
+        "Vijayapura": ["Jowar", "Grapes", "Bengal Gram"],
+        "Vijayanagara": ["Paddy", "Cotton", "Maize"],
+        "Yadgir": ["Tur Dal", "Jowar", "Cotton"]
+    };
 
-    if (!crops) {
-        result.innerHTML = "No crop data available.";
-        return;
-    }
+    const recommended = crops[district];
 
-    result.innerHTML =
-        "<h3>Suitable crops for " + district + "</h3><ul>" +
-        crops.map(crop => "<li>" + crop + "</li>").join("") +
-        "</ul>";
+    if (recommended) {
+        result.innerHTML = `
+            <h3>Recommended Crops for ${district}</h3>
+            <ul>
+                ${recommended.map(crop => `<li>${crop}</li>`).join("")}
+            </ul>
+        `;
+    } else {
+        result.innerHTML = "Crop information is not available.";
     }
+}
 
