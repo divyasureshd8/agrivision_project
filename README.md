@@ -1,2 +1,2 @@
-# agrivision_project
-basic crop recommendation system 
+ #agrivision_project
+
