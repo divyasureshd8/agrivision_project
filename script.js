@@ -73,3 +73,25 @@
 </body>
 </html>
   
+function showRegionalCrops() {
+    const district = document.getElementById("district").value;
+    const result = document.getElementById("regionalCropResult");
+
+    if (!district) {
+        result.innerHTML = "Please select a district.";
+        return;
+    }
+
+    const crops = regionalCrops[district];
+
+    if (!crops) {
+        result.innerHTML = "No crop data available.";
+        return;
+    }
+
+    result.innerHTML =
+        "<h3>Suitable crops for " + district + "</h3><ul>" +
+        crops.map(crop => "<li>" + crop + "</li>").join("") +
+        "</ul>";
+    }
+
