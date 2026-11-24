@@ -1,244 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agrivision - Crop Recommendation</title>
-  <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body {
-      margin: 0;
-      padding: 20px;
-      background: #f3f7f2;
-      color: #1f2d24;
-      display: flex;
-      justify-content: center;
-    }
-    .card {
-      width: 100%;
-      max-width: 440px;
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-    }
-    h1 {
-      margin: 0 0 6px;
-      font-size: 1.6rem;
-      color: #1b5e20;
-    }
-    p.subtitle {
-      margin: 0 0 20px;
-      font-size: 0.92rem;
-      color: #4f6356;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin: 12px 0 6px;
-    }
-    input {
-      width: 100%;
-      padding: 11px 12px;
-      border: 1px solid #cbd8ce;
-      border-radius: 10px;
-      font-size: 1rem;
-    }
-    input:focus {
-      outline: none;
-      border-color: #2e7d32;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 16px;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-weather {
-      background: #e8f5e9;
-      color: #1b5e20;
-      margin-top: 0;
-      margin-bottom: 8px;
-    }
-    .btn-predict {
-      background: #2e7d32;
-      color: #ffffff;
-    }
-    .btn-predict:disabled {
-      background: #9bb89d;
-      cursor: not-allowed;
-    }
-    .status {
-      font-size: 0.85rem;
-      color: #556b5d;
-      margin-top: 8px;
-      text-align: center;
-    }
-    .result {
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 12px;
-      background: #e8f5e9;
-      border: 1px solid #a5d6a7;
-      text-align: center;
-      display: none;
-    }
-    .result span {
-      display: block;
-      font-size: 0.85rem;
-      color: #2e7d32;
-      margin-bottom: 4px;
-    }
-    .result strong {
-      font-size: 1.4rem;
-      color: #1b5e20;
-      text-transform: capitalize;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>🌱 Agrivision</h1>
-    <p class="subtitle">Crop recommendation powered by Random Forest</p>
+async function loadModel(retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      statusText.textContent =
+        attempt === 1
+          ? "Fetching model.json..."
+          : `Retrying model.json (attempt ${attempt}/${retries})...`;
 
-    <button type="button" class="btn-weather" id="weatherBtn">
-      📍 Auto-Fill Local Weather
-    </button>
+      const response = await fetch(`./model.json?t=${Date.now()}`, {
+        cache: "no-store",
+      });
 
-    <form id="cropForm">
-      <label for="temperature">Temperature (°C)</label>
-      <input type="number" step="any" id="temperature" placeholder="e.g. 25.5" required />
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-      <label for="humidity">Humidity (%)</label>
-      <input type="number" step="any" id="humidity" placeholder="e.g. 80.0" required />
-
-      <label for="ph">Soil pH</label>
-      <input type="number" step="any" id="ph" placeholder="e.g. 6.5" required />
-
-      <label for="rainfall">Rainfall (mm)</label>
-      <input type="number" step="any" id="rainfall" placeholder="e.g. 200.0" required />
-
-      <button type="submit" class="btn-predict" id="predictBtn" disabled>
-        Loading Model...
-      </button>
-    </form>
-
-    <div class="status" id="statusText">Fetching model.json...</div>
-
-    <div class="result" id="resultBox">
-      <span>Recommended Crop</span>
-      <strong id="cropOutput">-</strong>
-    </div>
-  </div>
-
-  <script>
-    let cropModel = null;
-
-    const predictBtn = document.getElementById("predictBtn");
-    const statusText = document.getElementById("statusText");
-    const resultBox = document.getElementById("resultBox");
-    const cropOutput = document.getElementById("cropOutput");
-
-    // 1. Load model.json from the same repository folder
-    async function loadModel() {
-      try {
-        const response = await fetch("./model.json");
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        cropModel = await response.json();
-        predictBtn.disabled = false;
-        predictBtn.textContent = "Recommend Crop";
-        statusText.textContent = `Model ready (${cropModel.classes.length} crops)`;
-      } catch (err) {
+      cropModel = await response.json();
+      predictBtn.disabled = false;
+      predictBtn.textContent = "Recommend Crop";
+      statusText.textContent = `Model ready (${cropModel.classes.length} crops)`;
+      return;
+    } catch (err) {
+      if (attempt === retries) {
         statusText.textContent = "Error loading model.json: " + err.message;
         predictBtn.textContent = "Model Unavailable";
+      } else {
+        await new Promise((r) => setTimeout(r, 1200 * attempt));
       }
     }
+  }
+}
+    
+      
 
-    // 2. Traverse a single decision tree
-    function predictTree(tree, features) {
-      let node = 0;
-      while (tree.f[node] !== -2) {
-        if (features[tree.f[node]] <= tree.t[node]) {
-          node = tree.l[node];
-        } else {
-          node = tree.r[node];
-        }
-      }
-      return tree.c[node];
-    }
-
-    // 3. Majority vote across all trees in the Random Forest
-    function predictForest(model, features) {
-      const trees = model.trees || model.estimators;
-      const votes = new Array(model.classes.length).fill(0);
-
-      for (const tree of trees) {
-        const classIdx = predictTree(tree, features);
-        votes[classIdx] += 1;
-      }
-
-      let bestIdx = 0;
-      for (let i = 1; i < votes.length; i++) {
-        if (votes[i] > votes[bestIdx]) {
-          bestIdx = i;
-        }
-      }
-      return model.classes[bestIdx];
-    }
-
-    // 4. Handle form submission
-    document.getElementById("cropForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      if (!cropModel) return;
-
-      const temperature = parseFloat(document.getElementById("temperature").value);
-      const humidity = parseFloat(document.getElementById("humidity").value);
-      const ph = parseFloat(document.getElementById("ph").value);
-      const rainfall = parseFloat(document.getElementById("rainfall").value);
-
-      // IMPORTANT: Ensure this order matches X in your Colab training code!
-      const features = [temperature, humidity, ph, rainfall];
-
-      const predictedCrop = predictForest(cropModel, features);
-      cropOutput.textContent = predictedCrop;
-      resultBox.style.display = "block";
-    });
-
-    // 5. Auto-fill current temperature & humidity using device location
-    document.getElementById("weatherBtn").addEventListener("click", () => {
-      if (!navigator.geolocation) {
-        statusText.textContent = "Geolocation is not supported by your browser.";
-        return;
-      }
-      statusText.textContent = "Getting location & weather...";
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const { latitude, longitude } = pos.coords;
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m`;
-            const res = await fetch(url);
-            const data = await res.json();
-            document.getElementById("temperature").value = data.current.temperature_2m;
-            document.getElementById("humidity").value = data.current.relative_humidity_2m;
-            statusText.textContent = "Weather auto-filled! Enter pH and rainfall.";
-          } catch (err) {
-            statusText.textContent = "Could not fetch weather data.";
-          }
-        },
-        () => {
-          statusText.textContent = "Location permission denied.";
-        }
-      );
-    });
-
-    loadModel();
-  </script>
-</body>
-</html>
+      
