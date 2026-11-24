@@ -1,171 +1,248 @@
+
 <!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agrivision</title>
-<style>
-body{margin:0;font-family:sans-serif;background:#f1f8e9;color:#1b1b1b}
-header{background:#2e7d32;color:#fff;padding:24px 16px;text-align:center}
-header h1{margin:0;font-size:28px}
-header p{margin:6px 0 0;opacity:.9}
-main{max-width:420px;margin:-12px auto 30px;padding:0 16px}
-.card{background:#fff;border-radius:14px;padding:18px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-label{font-size:14px;color:#444}
-input,select{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px;background:#fff}
-button{width:100%;padding:12px;background:#2e7d32;color:#fff;border:0;border-radius:8px;font-size:17px}
-button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:6px}
-.row{display:flex;gap:8px}.row input{margin-bottom:6px}.row button{width:auto;padding:0 16px;font-size:15px}
-#msg{font-size:13px;color:#555;margin:6px 0 14px;min-height:16px}
-.best{font-size:26px;font-weight:bold;color:#2e7d32}
-.alt{margin-top:10px;color:#555}
-.bar{height:8px;border-radius:4px;background:#e0e0e0;margin:4px 0 10px;overflow:hidden}
-.bar i{display:block;height:100%;background:#2e7d32}
-.pct{font-size:14px;color:#555}
-footer{text-align:center;font-size:12px;color:#777;padding-bottom:20px}
-</style></head><body>
-<header><h1>🌱 Agrivision</h1><p>Smart crop recommendation</p></header>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriVision - Smart Farming</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+    <h1>🌱 AgriVision</h1>
+    <p>Smart Agriculture and Crop Recommendation System</p>
+</header>
+
 <main>
-<div class="card">
-<button class="loc" onclick="loc()">📍 Use my location</button>
-<div style="text-align:center;font-size:13px;color:#777;margin:4px 0">or search a place</div>
-<div class="row"><input id="q" placeholder="e.g. Thrissur, Pune, Ludhiana"><button onclick="place()">Find</button></div>
-<div id="msg">Fills temperature, humidity, rainfall and estimated soil pH.</div>
-<label>Season</label>
-<select id="s"><option value="">Any season</option><option value="Kharif">Kharif (Jun–Oct, monsoon)</option><option value="Rabi">Rabi (Nov–Mar, winter)</option><option value="Zaid">Zaid (Mar–Jun, summer)</option></select>
-<label>Temperature (°C)</label><input id="t" type="number" placeholder="e.g. 25">
-<label>Humidity (%)</label><input id="h" type="number" placeholder="e.g. 80">
-<label>Rainfall, last 30 days (mm)</label><input id="r" type="number" placeholder="e.g. 200">
-<label>Soil pH (auto estimate, editable)</label><input id="p" type="number" step="0.1" placeholder="e.g. 6.5">
-<button onclick="go()">Suggest crop</button>
-</div>
-<div class="card" id="out" style="display:none"></div>
-</main>
-<footer>Demo project · rule-based, not real agronomic advice</footer>
-<script>
-const C={
-Rice:[20,35,60,100,150,300,5,7],Wheat:[10,25,40,70,50,100,6,7.5],
-Maize:[18,30,50,80,60,110,5.5,7.5],Cotton:[22,35,50,80,60,120,6,8],
-Sugarcane:[20,35,60,85,100,200,6,8],Potato:[10,22,60,85,50,100,5,6.5],
-Tomato:[18,30,50,75,60,120,6,7],Banana:[22,35,70,90,100,250,5.5,7],
-Coffee:[15,28,60,90,150,250,6,6.5],Mango:[24,35,40,70,75,250,5.5,7.5],
-Groundnut:[22,32,40,70,50,120,5.5,7],Soybean:[20,30,50,80,60,120,6,7],
-Millet:[25,35,30,60,40,90,5.5,7.5],Apple:[5,20,50,80,100,200,5.5,6.5],
-Chickpea:[10,25,30,60,40,90,6,8.5],Jute:[24,37,70,90,150,250,6,7.5],
-Tea:[13,30,70,90,150,300,4.5,5.5],Lentil:[15,28,40,70,40,90,6,8],
-Pigeonpea:[20,35,40,70,60,150,5,7.5],Mungbean:[25,35,50,80,50,110,6,7.5],
-Kidneybean:[15,25,50,80,60,150,5.5,6.5],Pomegranate:[18,35,40,70,40,110,5.5,7.5],
-Grapes:[15,30,50,80,40,100,5.5,6.5],Watermelon:[24,35,50,80,40,110,6,7],
-Papaya:[22,35,60,90,80,200,6,7],Orange:[15,30,50,85,80,180,6,7.5],
-Coconut:[25,35,70,95,130,250,5.5,7],Onion:[13,28,50,75,40,90,6,7],
-Chilli:[20,32,55,85,60,120,6,7],Sunflower:[18,30,40,70,50,100,6,7.5],
-Mustard:[10,25,40,70,30,80,6,8],Barley:[8,22,40,65,40,90,6,8],
-Sorghum:[24,36,35,65,40,100,5.5,8]};
-const E={Rice:'🌾',Wheat:'🌾',Maize:'🌽',Cotton:'☁️',Sugarcane:'🎋',Potato:'🥔',Tomato:'🍅',Banana:'🍌',Coffee:'☕',Mango:'🥭',Groundnut:'🥜',Apple:'🍎',Grapes:'🍇',Watermelon:'🍉',Papaya:'🧡',Orange:'🍊',Coconut:'🥥',Onion:'🧅',Chilli:'🌶️',Sunflower:'🌻'};
-const S={Kharif:['Rice','Maize','Cotton','Sugarcane','Groundnut','Soybean','Millet','Pigeonpea','Mungbean','Jute','Sorghum','Chilli'],
-Rabi:['Wheat','Chickpea','Lentil','Mustard','Barley','Potato','Onion','Tomato','Sunflower','Kidneybean'],
-Zaid:['Watermelon','Mungbean','Sunflower','Maize','Tomato','Chilli','Papaya']};
-const perennial=['Banana','Coffee','Mango','Apple','Tea','Pomegranate','Grapes','Orange','Coconut','Papaya','Sugarcane'];
-const F={Rice:'100-60-40',Wheat:'120-60-40',Maize:'120-60-40',Cotton:'120-60-60',Sugarcane:'250-100-120',Potato:'150-80-100',Tomato:'120-80-60',Groundnut:'20-40-40',Soybean:'30-60-40',Millet:'60-30-30',Chickpea:'20-40-20',Jute:'60-30-30',Tea:'120-30-60',Lentil:'20-40-20',Pigeonpea:'20-50-20',Mungbean:'20-40-20',Kidneybean:'100-60-50',Watermelon:'100-60-60',Onion:'100-50-50',Chilli:'100-50-50',Sunflower:'60-90-40',Mustard:'80-40-40',Barley:'60-30-20',Sorghum:'80-40-40'};
-const legume=['Groundnut','Soybean','Chickpea','Lentil','Pigeonpea','Mungbean','Kidneybean'];
-function tips(c,p){
-const a=C[c];let h='<div class="alt"><b>🧪 Fertilizer tips for '+c+'</b></div><div class="pct">';
-if(F[c])h+='Typical N-P-K: <b>'+F[c]+' kg/ha</b>. Give half the nitrogen at sowing and the rest in 1–2 splits.<br>';
-else h+='Tree/perennial crop: apply compost or farmyard manure yearly plus split NPK doses as per your local agri office schedule.<br>';
-if(legume.includes(c))h+='Legume: seed treatment with Rhizobium reduces the need for nitrogen.<br>';
-if(p<a[6])h+='⚠️ Soil is too acidic (pH '+p+', ideal '+a[6]+'–'+a[7]+'). Add agricultural lime and compost.<br>';
-else if(p>a[7])h+='⚠️ Soil is too alkaline (pH '+p+', ideal '+a[6]+'–'+a[7]+'). Add gypsum or elemental sulphur and organic matter.<br>';
-else h+='✅ Soil pH suits this crop.<br>';
-return h+'Get a soil test for exact doses. These are general values.</div>';
-}
-const $=id=>document.getElementById(id);
-const m=$('msg');
-function fit(v,lo,hi){if(v>=lo&&v<=hi)return 1;const w=Math.max(hi-lo,1),d=v<lo?lo-v:v-hi;return Math.max(0,1-d/w)}
-function go(){
-const t=+$('t').value,h=+$('h').value,r=+$('r').value,p=+$('p').value,s=$('s').value;
-if(!$('t').value||!$('h').value||!$('r').value||!$('p').value){alert('Please fill all four values.');return}
-let list=Object.keys(C);
-if(s)list=list.filter(c=>perennial.includes(c)||S[s].includes(c));
-const res=list.map(c=>{const a=C[c];
-const sc=(fit(t,a[0],a[1])+fit(h,a[2],a[3])+fit(r,a[4],a[5])+fit(p,a[6],a[7]))/4;
-return{c,pct:Math.round(sc*100)}}).sort((x,y)=>y.pct-x.pct).slice(0,3);
-const row=(x,big)=>(big?'<div class="best">':'<div>')+(E[x.c]||'🌱')+' '+x.c+'</div><div class="pct">Confidence: '+x.pct+'%</div><div class="bar"><i style="width:'+x.pct+'%"></i></div>';
-let html='<div class="pct">Best match'+(s?' for '+s:'')+'</div>'+row(res[0],true);
-html+='<div class="alt"><b>Other options</b></div>'+row(res[1])+row(res[2]);
-html+=tips(res[0].c,p);
-if(res[0].pct<50)html+='<div class="pct">⚠️ Low match: conditions are unusual for these crops.</div>';
-$('out').innerHTML=html;$('out').style.display='block';
-$('out').scrollIntoView({behavior:'smooth'});
-}
-async function fill(la,lo){
-try{
-m.textContent='Getting weather…';
-const u='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,relative_humidity_2m&daily=precipitation_sum&past_days=30&forecast_days=1';
-const j=await (await fetch(u)).json();
-$('t').value=Math.round(j.current.temperature_2m);
-$('h').value=Math.round(j.current.relative_humidity_2m);
-$('r').value=Math.round(j.daily.precipitation_sum.reduce((a,b)=>a+(b||0),0));
-}catch(e){m.textContent='Could not get weather. Type the values by hand.';return}
-try{
-m.textContent='Getting soil pH…';
-const s='https://rest.isric.org/soilgrids/v2.0/properties/query?lon='+lo+'&lat='+la+'&property=phh2o&depth=0-5cm&value=mean';
-const k=await (await fetch(s)).json();
-const d=k.properties.layers[0].depths.map(x=>x.values.mean).filter(x=>x!=null);
-if(!d.length)throw 0;
-const v=d.reduce((a,b)=>a+b,0)/d.length/10;
-$('p').value=v.toFixed(1);
-m.textContent='Done! Estimated soil pH '+v.toFixed(1)+'. Change it if you have a soil test.';
-}catch(e){$('p').value='6.5';m.textContent='Weather filled. Soil service unavailable, so pH is set to a typical 6.5. Change it if you know yours.'}
-}
-function loc(){
-if(!navigator.geolocation){m.textContent='Location is not supported on this device.';return}
-m.textContent='Getting your location…';
-navigator.geolocation.getCurrentPosition(pos=>fill(pos.coords.latitude,pos.coords.longitude),()=>{m.textContent='Location blocked. Allow location in your browser, or search a place.'});
-}
-async function place(){
-const q=$('q').value.trim();
-if(!q){m.textContent='Type a place name first.';return}
-m.textContent='Searching place…';
-try{
-const g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(q))).json();
-if(!g.results||!g.results.length){m.textContent='Place not found. Try a nearby town.';return}
-const r=g.results[0];
-await fill(r.latitude,r.longitude);
-}catch(e){m.textContent='Place search failed. Check your internet.'}
-}
-  let rfModel = null;
+    <section>
+        <h2>Regional Crop Recommendation</h2>
+        <label for="district">Select Karnataka District:</label>
+        <select id="district">
+            <option value="">Select District</option>
+            <option>Bagalkot</option>
+            <option>Ballari</option>
+            <option>Belagavi</option>
+            <option>Bengaluru Rural</option>
+            <option>Bengaluru Urban</option>
+            <option>Bidar</option>
+            <option>Chamarajanagar</option>
+            <option>Chikkaballapur</option>
+            <option>Chikkamagaluru</option>
+            <option>Chitradurga</option>
+            <option>Dakshina Kannada</option>
+            <option>Davanagere</option>
+            <option>Dharwad</option>
+            <option>Gadag</option>
+            <option>Hassan</option>
+            <option>Haveri</option>
+            <option>Kalaburagi</option>
+            <option>Kodagu</option>
+            <option>Kolar</option>
+            <option>Koppal</option>
+            <option>Mandya</option>
+            <option>Mysuru</option>
+            <option>Raichur</option>
+            <option>Ramanagara</option>
+            <option>Shivamogga</option>
+            <option>Tumakuru</option>
+            <option>Udupi</option>
+            <option>Uttara Kannada</option>
+            <option>Vijayapura</option>
+            <option>Vijayanagara</option>
+            <option>Yadgir</option>
+        </select>
+        <button onclick="showRegionalCrops()">Show Regional Crops</button>
+        <div id="regionalResult"></div>
+    </section>
 
-async function loadRFModel() {
-  try {
-    const res = await fetch(`./model.json?v=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    rfModel = await res.json();
-    console.log("Loaded model classes:", rfModel.classes);
-  } catch (err) {
-    console.error("Failed to load model.json:", err);
-  }
-}
+    <section>
+        <h2>AI Crop Recommendation</h2>
+        <p>Enter your soil and climate details.</p>
 
-function predictWithRF(features) {
-  if (!rfModel) return null;
+        <label>Nitrogen (N)</label>
+        <input type="number" id="nitrogen" placeholder="Enter Nitrogen">
 
-  const trees = rfModel.trees || rfModel.estimators || [];
-  const votes = new Array(rfModel.classes.length).fill(0);
+        <label>Phosphorus (P)</label>
+        <input type="number" id="phosphorus" placeholder="Enter Phosphorus">
 
-  for (const tree of trees) {
-    let node = 0;
-    while (tree.f[node] !== -2) {
-      node = features[tree.f[node]] <= tree.t[node] ? tree.l[node] : tree.r[node];
+        <label>Potassium (K)</label>
+        <input type="number" id="potassium" placeholder="Enter Potassium">
+
+        <label>Temperature (°C)</label>
+        <input type="number" id="temperature" step="any" placeholder="Enter Temperature">
+
+        <label>Humidity (%)</label>
+        <input type="number" id="humidity" step="any" placeholder="Enter Humidity">
+
+        <label>Soil pH</label>
+        <input type="number" id="ph" step="any" placeholder="Enter Soil pH">
+
+        <label>Rainfall (mm)</label>
+        <input type="number" id="rainfall" step="any" placeholder="Enter Rainfall">
+
+        <button id="predictCrop">Predict Best Crop</button>
+        <div id="predictionResult"></div>
+    </section
+const regionalCrops = {
+    "Chikkamagaluru": ["Coffee", "Arecanut", "Pepper", "Rice"],
+    "Kodagu": ["Coffee", "Pepper", "Cardamom"],
+    "Hassan": ["Ragi", "Rice", "Coconut"],
+    "Mysuru": ["Ragi", "Rice", "Sugarcane"],
+    "Mandya": ["Sugarcane", "Rice", "Coconut"],
+    "Shivamogga": ["Arecanut", "Rice", "Maize"],
+    "Dakshina Kannada": ["Coconut", "Arecanut", "Cashew"],
+    "Udupi": ["Coconut", "Arecanut", "Rice"],
+    "Uttara Kannada": ["Arecanut", "Coconut", "Pepper"],
+    "Belagavi": ["Sugarcane", "Maize", "Soybean"],
+    "Bagalkot": ["Jowar", "Maize", "Pulses"],
+    "Ballari": ["Cotton", "Jowar", "Groundnut"],
+    "Bengaluru Urban": ["Ragi", "Vegetables", "Flowers"],
+    "Bengaluru Rural": ["Ragi", "Maize", "Vegetables"],
+    "Tumakuru": ["Coconut", "Ragi", "Groundnut"],
+    "Chitradurga": ["Groundnut", "Ragi", "Maize"],
+    "Davanagere": ["Maize", "Rice", "Cotton"],
+    "Dharwad": ["Cotton", "Soybean", "Jowar"],
+    "Gadag": ["Jowar", "Groundnut", "Pulses"],
+    "Haveri": ["Cotton", "Maize", "Chilli"],
+    "Bidar": ["Red gram", "Soybean", "Jowar"],
+    "Kalaburagi": ["Red gram", "Jowar", "Cotton"],
+    "Kolar": ["Ragi", "Tomato", "Mango"],
+    "Chikkaballapur": ["Ragi", "Groundnut", "Grapes"],
+    "Chamarajanagar": ["Turmeric", "Ragi", "Sugarcane"],
+    "Koppal": ["Jowar", "Cotton", "Paddy"],
+    "Raichur": ["Rice", "Cotton", "Pulses"],
+    "Vijayapura": ["Jowar", "Grapes", "Pomegranate"],
+    "Vijayanagara": ["Rice", "Maize", "Cotton"],
+    "Yadgir": ["Red gram", "Jowar", "Cotton"],
+    "Ramanagara": ["Ragi", "Mango", "Coconut"]
+};
+
+function showRegionalCrops() {
+    const district = document.getElementById("district").value;
+    const result = document.getElementById("regionalResult");
+
+    if (!district) {
+        result.innerHTML = "Please select a district.";
+        return;
     }
-    votes[tree.c[node]] += 1;
-  }
 
-  return rfModel.classes
-    .map((crop, idx) => ({
-      crop,
-      confidence: trees.length ? Math.round((votes[idx] / trees.length) * 100) : 0
-    }))
-    .sort((a, b) => b.confidence - a.confidence);
+    const crops = regionalCrops[district] || [];
+    result.innerHTML = "<h3>Recommended Regional Crops</h3><p>" +
+        crops.join(", ") + "</p>";
 }
 
-loadRFModel();
-</script>       
-</body></html>
+const API_URL = "https://sum-hearts-widely-numerous.trycloudflare.com";
+
+document.getElementById("predictCrop").addEventListener("click", async function () {
+    const district = document.getElementById("district").value;
+
+    const fields = [
+        "nitrogen", "phosphorus", "potassium",
+        "temperature", "humidity", "ph", "rainfall"
+    ];
+
+    const values = {};
+
+    for (const field of fields) {
+        const value = document.getElementById(field).value;
+
+        if (value === "") {
+            alert("Please enter all soil and climate values.");
+            return;
+        }
+
+        values[field] = Number(value);
+    }
+
+    if (!district) {
+        alert("Please select your district.");
+        return;
+    }
+
+    const data = {
+        district: district,
+        N: values.nitrogen,
+        P: values.phosphorus,
+        K: values.potassium,
+        temperature: values.temperature,
+        humidity: values.humidity,
+        ph: values.ph,
+        rainfall: values.rainfall
+    };
+
+    const result = document.getElementById("predictionResult");
+    result.innerHTML = "Predicting crop... Please wait.";
+
+    try {
+        const response = await fetch(API_URL + "/predict", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
+
+        const prediction = await response.json();
+
+        if (!response.ok) {
+            throw new Error(prediction.error || "Prediction failed");
+        }
+
+        result.innerHTML =
+            "<h3>AI Crop Prediction</h3>" +
+            "<p><b>Best Crop:</b> " + prediction.ml_prediction + "</p>" +
+            "<p><b>Regional Crops:</b> " +
+            prediction.regional_crops.join(", ") + "</p>" +
+            "<p><b>Regional Match:</b> " +
+            prediction.regional_match + "</p>";
+
+    } catch (error) {
+        result.innerHTML = "Error: " + error.message +
+            ". Please check that your backend is running.";
+    }
+});
+
+<section>
+    <h2>Crop-wise NPK Recommendation</h2>
+
+    <label>Select Crop:</label>
+    <select id="cropSelect">
+        <option value="">Choose a Crop</option>
+        <option>Rice</option>
+        <option>Wheat</option>
+        <option>Maize</option>
+        <option>Cotton</option>
+        <option>Sugarcane</option>
+        <option>Ragi</option>
+        <option>Groundnut</option>
+        <option>Tomato</option>
+        <option>Potato</option>
+        <option>Banana</option>
+        <option>Coffee</option>
+        <option>Arecanut</option>
+        <option>Pepper</option>
+        <option>Cardamom</option>
+        <option>Coconut</option>
+        <option>Chilli</option>
+        <option>Onion</option>
+        <option>Soybean</option>
+        <option>Turmeric</option>
+        <option>Mango</option>
+    </select>
+
+    <div id="npkResult">
+        Select a crop to see NPK values.
+    </div>
+</section>
+
+</main>
+
+<footer>
+    <p>AgriVision - Empowering Farmers with AI 🌾</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+  </html>
+  
