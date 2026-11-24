@@ -1,6 +1,7 @@
-sc.sort((a,b)=>b[1]-a[1]);
-const f=a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' ('+a[1].toFixed(0)+'%)';
-o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>';
-}
-</script></body></html>
-
+try{
+const s='https://rest.isric.org/soilgrids/v2.0/properties/query?lon='+lo+'&lat='+la+'&property=phh2o&depth=0-5cm&value=mean';
+const k=await (await fetch(s)).json();
+const v=k.properties.layers[0].depths[0].values.mean;
+$('p').value=(v/10).toFixed(1);
+m.textContent='Done! Weather and estimated pH filled in. Tap Suggest crop.';
+}catch(e){$('p').value='6.5';m.textContent='Weather filled. Soil service unavailable, so pH is set to a typical 6.5. Change it if you know yours.'}
