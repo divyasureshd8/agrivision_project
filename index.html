@@ -47,7 +47,7 @@ Location is sent to Open-Meteo, SoilGrids and OpenStreetMap. District lookup © 
 const $=id=>document.getElementById(id);
 const E={rice:'🌾',maize:'🌽',chickpea:'🫛',kidneybeans:'🫘',pigeonpeas:'🫛',mothbeans:'🫘',mungbean:'🫛',blackgram:'🫘',lentil:'🫘',pomegranate:'🍎',banana:'🍌',mango:'🥭',grapes:'🍇',watermelon:'🍉',muskmelon:'🍈',apple:'🍎',orange:'🍊',papaya:'🧡',coconut:'🥥',cotton:'☁️',jute:'🌿',coffee:'☕'};
 
-// Starter lists, not official data. Only Hassan was checked against a source.
+// Not official rankings. Only Hassan and Chikkamagaluru were checked against sources.
 const DISTRICTS={
 'Bagalkote':'jowar,maize,wheat,sugarcane,pigeon pea,chickpea',
 'Ballari':'rice,cotton,jowar,maize,chilli',
@@ -58,7 +58,7 @@ const DISTRICTS={
 'Bidar':'soybean,pigeon pea,chickpea,jowar,sugarcane',
 'Chamarajanagar':'maize,sugarcane,turmeric,banana,ragi',
 'Chikkaballapura':'ragi,maize,grapes,mulberry,vegetables',
-'Chikkamagaluru':'coffee,arecanut,black pepper,coconut,rice',
+'Chikkamagaluru':'coffee,arecanut,black pepper,rice,coconut,cardamom,tea',
 'Chitradurga':'maize,groundnut,ragi,onion,coconut,arecanut',
 'Dakshina Kannada':'arecanut,coconut,rice,black pepper,cashew,rubber',
 'Davanagere':'maize,rice,arecanut,cotton',
@@ -142,6 +142,17 @@ m.textContent='Done! Weather and estimated pH filled in. Check pH and district, 
 },()=>{m.textContent='Location blocked or unavailable. Type values by hand.'});
 }
 
+const CHECKED=['Hassan','Chikkamagaluru'];
+
+// District crops come from the list above, not from the model's scores
+function districtHTML(){
+const d=$('district').value;
+if(!d)return '';
+const list=DISTRICTS[d].split(',').map(c=>(E[c]||'🌱')+' '+cap(c));
+const note=CHECKED.includes(d)?'Checked against online sources; list order is not an official ranking.':'Unverified starter list.';
+return '<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #ddd"><b>Crops grown in '+d+' district</b><div class="alt">'+list.join('<br>')+'<br><small>'+note+'</small></div></div>';
+}
+
 function localHTML(sc){
 const d=$('district').value;
 if(!d)return '<div class="alt local">Select your district and tap Suggest crop again to see local crops.</div>';
@@ -151,10 +162,10 @@ const known=Object.keys(M.crops).map(nameOf);
 const matches=sc.filter(a=>local.includes(nameOf(a[0])))
 .map(a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' (model score '+a[1].toFixed(1)+'%)');
 const missing=local.filter(c=>!known.includes(c)).map(cap);
-return '<div class="alt local"><b>'+d+' district</b><br><b>Model results for local crops:</b><br>'+
+return '<div class="alt local"><b>Model scores for '+d+' crops:</b><br>'+
 (matches.join('<br>')||'None')+
 '<br><b>Local crops the model can’t assess:</b><br>'+(missing.join(', ')||'None')+
-'<br><small>District lists are unofficial starter data. A low score means a weak match.</small></div>';
+'<br><small>A low score does not prove a crop is unsuitable. The model does not use location or season.</small></div>';
 }
 
 function go(){
@@ -177,7 +188,7 @@ let tot=0;sc.forEach(a=>{a[1]=Math.exp(a[1]-mx);tot+=a[1]});
 sc.forEach(a=>a[1]=a[1]/tot*100);
 sc.sort((a,b)=>b[1]-a[1]);
 const f=a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' ('+a[1].toFixed(0)+'%)';
-o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>'+localHTML(sc);
+o.innerHTML=districtHTML()+'Model match from your inputs<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>'+localHTML(sc);
 }
 </script>
 </body></html>
