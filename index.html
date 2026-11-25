@@ -10,20 +10,23 @@ header p{margin:6px 0 0;opacity:.9}
 main{max-width:420px;margin:-12px auto 30px;padding:0 16px}
 .card{background:#fff;border-radius:14px;padding:18px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 label{font-size:14px;color:#444}
-input{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px}
+input,select{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px;background:#fff;color:#1b1b1b}
 button{width:100%;padding:12px;background:#2e7d32;color:#fff;border:0;border-radius:8px;font-size:17px}
 button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:6px}
 #msg{font-size:13px;color:#555;margin:6px 0 14px;min-height:16px}
 .best{font-size:26px;font-weight:bold;color:#2e7d32}
 .alt{margin-top:8px;color:#555;line-height:1.6}
+.local{margin-top:14px;padding-top:10px;border-top:1px solid #ddd}
 .row{display:flex;gap:8px}
-footer{text-align:center;font-size:12px;color:#777;padding-bottom:20px}
+footer{text-align:center;font-size:12px;color:#777;padding:0 12px 20px}
 </style></head><body>
 <header><h1>🌱 Agrivision</h1><p>ML crop recommendation</p></header>
 <main>
 <div class="card">
 <button class="loc" onclick="loc()">📍 Use my location</button>
 <div id="msg">Fills temperature, humidity, rainfall and estimated soil pH.</div>
+<label>District (choose, or use location; please check it)</label>
+<select id="district"><option value="">Select district</option></select>
 <label>Temperature (°C)</label><input id="temperature" type="number" placeholder="e.g. 25">
 <label>Humidity (%)</label><input id="humidity" type="number" placeholder="e.g. 80">
 <label>Rainfall, last 30 days (mm)</label><input id="rainfall" type="number" placeholder="e.g. 200">
@@ -38,19 +41,85 @@ footer{text-align:center;font-size:12px;color:#777;padding-bottom:20px}
 </div>
 <div class="card" id="out" style="display:none"></div>
 </main>
-<footer>Gaussian Naive Bayes model · learning project, not agronomic advice</footer>
+<footer>Gaussian Naive Bayes model · learning project, not agronomic advice<br>
+Location is sent to Open-Meteo, SoilGrids and OpenStreetMap. District lookup © OpenStreetMap contributors.</footer>
 <script>
 const $=id=>document.getElementById(id);
 const E={rice:'🌾',maize:'🌽',chickpea:'🫛',kidneybeans:'🫘',pigeonpeas:'🫛',mothbeans:'🫘',mungbean:'🫛',blackgram:'🫘',lentil:'🫘',pomegranate:'🍎',banana:'🍌',mango:'🥭',grapes:'🍇',watermelon:'🍉',muskmelon:'🍈',apple:'🍎',orange:'🍊',papaya:'🧡',coconut:'🥥',cotton:'☁️',jute:'🌿',coffee:'☕'};
+
+// Starter lists, not official data. Only Hassan was checked against a source.
+const DISTRICTS={
+'Bagalkote':'jowar,maize,wheat,sugarcane,pigeon pea,chickpea',
+'Ballari':'rice,cotton,jowar,maize,chilli',
+'Belagavi':'sugarcane,maize,jowar,soybean,rice',
+'Bengaluru North':'ragi,maize,grapes,vegetables,mulberry',
+'Bengaluru South':'ragi,mulberry,mango,coconut,banana',
+'Bengaluru Urban':'ragi,vegetables,mango,grapes',
+'Bidar':'soybean,pigeon pea,chickpea,jowar,sugarcane',
+'Chamarajanagar':'maize,sugarcane,turmeric,banana,ragi',
+'Chikkaballapura':'ragi,maize,grapes,mulberry,vegetables',
+'Chikkamagaluru':'coffee,arecanut,black pepper,coconut,rice',
+'Chitradurga':'maize,groundnut,ragi,onion,coconut,arecanut',
+'Dakshina Kannada':'arecanut,coconut,rice,black pepper,cashew,rubber',
+'Davanagere':'maize,rice,arecanut,cotton',
+'Dharwad':'cotton,maize,soybean,wheat,chilli,chickpea',
+'Gadag':'maize,green gram,onion,sunflower,chickpea,jowar',
+'Hassan':'ragi,coconut,potato,rice,sugarcane,maize,coffee,black pepper',
+'Haveri':'maize,cotton,rice,chilli,groundnut',
+'Kalaburagi':'pigeon pea,jowar,chickpea,cotton,sugarcane',
+'Kodagu':'coffee,black pepper,rice,cardamom,orange',
+'Kolar':'ragi,tomato,mango,mulberry,vegetables',
+'Koppal':'rice,maize,pearl millet,pomegranate,chickpea',
+'Mandya':'sugarcane,rice,ragi,coconut,mulberry',
+'Mysuru':'rice,ragi,sugarcane,tobacco,cotton,maize',
+'Raichur':'rice,cotton,pigeon pea,jowar,chickpea',
+'Shivamogga':'arecanut,rice,maize,black pepper,ginger',
+'Tumakuru':'coconut,arecanut,ragi,groundnut,mango',
+'Udupi':'rice,coconut,arecanut,cashew,black pepper',
+'Uttara Kannada':'arecanut,rice,coconut,black pepper,banana',
+'Vijayanagara':'maize,rice,jowar,cotton,sugarcane',
+'Vijayapura':'jowar,pigeon pea,chickpea,grapes,sugarcane,pomegranate',
+'Yadgir':'rice,cotton,pigeon pea,jowar,groundnut'
+};
+// Old or alternative spellings
+const OTHER_NAMES={bagalkot:'Bagalkote',bellary:'Ballari',belgaum:'Belagavi',bangalore:'Bengaluru Urban','bangalore urban':'Bengaluru Urban',bengaluru:'Bengaluru Urban','bangalore rural':'Bengaluru North','bengaluru rural':'Bengaluru North',ramanagara:'Bengaluru South',ramanagaram:'Bengaluru South',chamrajanagar:'Chamarajanagar',chamarajanagara:'Chamarajanagar',chikkaballapur:'Chikkaballapura',chikballapur:'Chikkaballapura',chikmagalur:'Chikkamagaluru',davangere:'Davanagere',dharwada:'Dharwad',gadaga:'Gadag',gulbarga:'Kalaburagi',coorg:'Kodagu',koppala:'Koppal',mysore:'Mysuru',raichuru:'Raichur',shimoga:'Shivamogga',tumkur:'Tumakuru',bijapur:'Vijayapura',yadagiri:'Yadgir'};
+// Model crop names that are spelled differently in the district lists
+const MODEL_NAMES={pigeonpeas:'pigeon pea',mungbean:'green gram'};
+
+Object.keys(DISTRICTS).forEach(d=>$('district').add(new Option(d,d)));
+
 let M=null;
 fetch('crop_model.json').then(r=>r.json()).then(j=>M=j).catch(()=>{});
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+function matchDistrict(name){
+const n=String(name||'').toLowerCase().replace(/\bdistrict\b/g,'').trim();
+return OTHER_NAMES[n]||Object.keys(DISTRICTS).find(d=>d.toLowerCase()===n)||'';
+}
+
+let lookupId=0;
+async function findDistrict(la,lo){
+const id=++lookupId;
+try{
+const u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat='+la+'&lon='+lo;
+const r=await fetch(u);
+if(!r.ok)return;
+const a=(await r.json()).address||{};
+if(a.state!=='Karnataka')return;
+const d=matchDistrict(a.state_district||a.county);
+// Don't overwrite a district the user picked while waiting
+if(d&&id===lookupId&&!$('district').value)$('district').value=d;
+}catch(e){}
+}
+
 async function loc(){
 const m=$('msg');
 if(!navigator.geolocation){m.textContent='Location is not supported on this device.';return}
 m.textContent='Getting your location…';
 navigator.geolocation.getCurrentPosition(async pos=>{
 const la=pos.coords.latitude,lo=pos.coords.longitude;
+$('district').value='';
+findDistrict(la,lo);
 try{
 m.textContent='Getting weather…';
 const u='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,relative_humidity_2m&daily=precipitation_sum&past_days=30&forecast_days=1&timezone=auto';
@@ -61,15 +130,33 @@ $('rainfall').value=Math.round(j.daily.precipitation_sum.reduce((a,b)=>a+(b||0),
 }catch(e){m.textContent='Could not get weather. Type the values by hand.';return}
 try{
 m.textContent='Getting soil pH…';
+// Clear any old value so it is not mistaken for this location
+$('ph').value='';
 const s='https://rest.isric.org/soilgrids/v2.0/properties/query?lon='+lo+'&lat='+la+'&property=phh2o&depth=0-5cm&value=mean';
 const j=await (await fetch(s)).json();
 const v=j.properties.layers[0].depths[0].values.mean;
 if(v==null)throw 0;
 $('ph').value=(v/10).toFixed(1);
-m.textContent='Done! Weather and estimated pH filled in. Check pH, then tap Suggest crop.';
+m.textContent='Done! Weather and estimated pH filled in. Check pH and district, then tap Suggest crop.';
 }catch(e){m.textContent='Weather filled. Could not get soil pH, please type it yourself.'}
-},()=>{m.textContent='Location blocked. Allow location in your browser, or type values by hand.'});
+},()=>{m.textContent='Location blocked or unavailable. Type values by hand.'});
 }
+
+function localHTML(sc){
+const d=$('district').value;
+if(!d)return '<div class="alt local">Select your district and tap Suggest crop again to see local crops.</div>';
+const local=DISTRICTS[d].split(',');
+const nameOf=k=>MODEL_NAMES[k]||k.toLowerCase();
+const known=Object.keys(M.crops).map(nameOf);
+const matches=sc.filter(a=>local.includes(nameOf(a[0])))
+.map(a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' (model score '+a[1].toFixed(1)+'%)');
+const missing=local.filter(c=>!known.includes(c)).map(cap);
+return '<div class="alt local"><b>'+d+' district</b><br><b>Model results for local crops:</b><br>'+
+(matches.join('<br>')||'None')+
+'<br><b>Local crops the model can’t assess:</b><br>'+(missing.join(', ')||'None')+
+'<br><small>District lists are unofficial starter data. A low score means a weak match.</small></div>';
+}
+
 function go(){
 const o=$('out');o.style.display='block';
 if(!M){o.innerHTML='Model not loaded. Make sure crop_model.json is in your repo, then refresh.';return}
@@ -90,61 +177,7 @@ let tot=0;sc.forEach(a=>{a[1]=Math.exp(a[1]-mx);tot+=a[1]});
 sc.forEach(a=>a[1]=a[1]/tot*100);
 sc.sort((a,b)=>b[1]-a[1]);
 const f=a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' ('+a[1].toFixed(0)+'%)';
-o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>';
-}
-  let userDistrict = null;
-
-function showLocal(allPredictions, modelCrops) {
-  const box = document.getElementById("localResult");
-  if (!userDistrict) {
-    userDistrict = prompt("Enter your district:");
-  }
-  const r = regionalSuggestion(userDistrict, allPredictions, modelCrops);
-  if (!r.found) {
-    box.textContent = r.message;
-    userDistrict = null;
-    return;
-  }
-  const matches = r.localMatches
-    .map(p => `${p.crop} (model score ${(p.score * 100).toFixed(1)}%)`)
-    .join(", ");
-  box.innerText =
-    `District: ${r.district}\n` +
-    `Model results grown locally: ${matches || "none"}\n` +
-    `Local crops the model can't assess: ${r.notInModel.join(", ") || "none"}`;
-}
-  o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div><div id="localResult" class="alt"></div>';
-showLocal(sc.map(a=>({crop:a[0],score:a[1]/100})),Object.keys(M.crops));
-}
-
-let userDistrict = null;
-
-function showLocal(allPredictions, modelCrops) {
-  const box = document.getElementById("localResult");
-  if (typeof regionalSuggestion !== "function") {
-    box.textContent = "District crop code is not loaded.";
-    return;
-  }
-  // Match other spellings the model may use
-  Object.assign(ALIASES, { pigeonpeas: "pigeon pea", mungbean: "green gram" });
-  if (!userDistrict) {
-    userDistrict = prompt("Enter your district:");
-  }
-  if (!userDistrict) return;
-  const r = regionalSuggestion(userDistrict, allPredictions, modelCrops);
-  if (!r.found) {
-    box.textContent = r.message;
-    userDistrict = null;
-    return;
-  }
-  const matches = r.localMatches
-    .map(p => `${p.crop} (model score ${(p.score * 100).toFixed(1)}%)`)
-    .join(", ");
-  box.innerText =
-    `District: ${r.district}\n` +
-    `Model results grown locally: ${matches || "none"}\n` +
-    `Local crops the model can't assess: ${r.notInModel.join(", ") || "none"}`;
+o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>'+localHTML(sc);
 }
 </script>
-<script src="districtCrops.js"></script>
 </body></html>
