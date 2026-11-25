@@ -92,5 +92,25 @@ sc.sort((a,b)=>b[1]-a[1]);
 const f=a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' ('+a[1].toFixed(0)+'%)';
 o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>';
 }
-</script></body></html>
+  let userDistrict = null;
+
+function showLocal(allPredictions, modelCrops) {
+  const box = document.getElementById("localResult");
+  if (!userDistrict) {
+    userDistrict = prompt("Enter your district:");
+  }
+  const r = regionalSuggestion(userDistrict, allPredictions, modelCrops);
+  if (!r.found) {
+    box.textContent = r.message;
+    userDistrict = null;
+    return;
+  }
+  const matches = r.localMatches
+    .map(p => `${p.crop} (model score ${(p.score * 100).toFixed(1)}%)`)
+    .join(", ");
+  box.innerText =
+    `District: ${r.district}\n` +
+    `Model results grown locally: ${matches || "none"}\n` +
+    `Local crops the model can't assess: ${r.notInModel.join(", ") || "none"}`;
+}</script></body></html>
   
