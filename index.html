@@ -18,6 +18,10 @@ button{width:100%;padding:12px;background:#2e7d32;color:#fff;border:0;border-rad
 button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:6px}
 #msg{font-size:13px;color:#555;margin:6px 0 14px;min-height:16px}
 .alt{margin-top:8px;color:#555;line-height:1.6}
+details{border-bottom:1px solid #eee;padding:8px 0}
+summary{font-size:17px;color:#1b1b1b}
+.info{font-size:14px;color:#444;line-height:1.8;padding:6px 0 4px 8px}
+.info b{color:#2e7d32}
 footer{text-align:center;font-size:12px;color:#777;padding:0 12px 20px}
 </style></head><body>
 <header>
@@ -65,7 +69,15 @@ blocked:'Location blocked or unavailable. Please choose a district.',
 choose:'Please select a district.',
 title:a=>'Crops grown in '+a+' district',
 checked:'Checked against online sources; list order is not an official ranking.',
-unver:'Unverified starter list.'
+unver:'Unverified starter list.',
+tap:'Tap a crop to see what it needs.',
+temp:'Temperature',
+hum:'Humidity',
+rain:'Yearly rainfall',
+npk:'Fertilizer N : P : K',
+varies:'Varies',
+noInfo:'Varies by crop, no single value.',
+infoNote:'Approximate typical values, not verified for each district. NPK is a usual fertilizer dose, not a soil level. Do a soil test before applying fertilizer.'
 },
 kn:{
 sub:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
@@ -87,8 +99,61 @@ blocked:'ಸ್ಥಳಕ್ಕೆ ಅನುಮತಿ ಇಲ್ಲ ಅಥವಾ �
 choose:'ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
 title:a=>a+' ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
 checked:'ಆನ್‌ಲೈನ್ ಮೂಲಗಳಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ; ಪಟ್ಟಿಯ ಕ್ರಮ ಅಧಿಕೃತ ಶ್ರೇಣಿಯಲ್ಲ.',
-unver:'ಪರಿಶೀಲಿಸದ ಆರಂಭಿಕ ಪಟ್ಟಿ.'
+unver:'ಪರಿಶೀಲಿಸದ ಆರಂಭಿಕ ಪಟ್ಟಿ.',
+tap:'ಬೆಳೆಯ ಅಗತ್ಯಗಳನ್ನು ನೋಡಲು ಅದರ ಮೇಲೆ ಒತ್ತಿ.',
+temp:'ತಾಪಮಾನ',
+hum:'ಆರ್ದ್ರತೆ',
+rain:'ವಾರ್ಷಿಕ ಮಳೆ',
+npk:'ರಸಗೊಬ್ಬರ N : P : K',
+varies:'ಬದಲಾಗುತ್ತದೆ',
+noInfo:'ಬೆಳೆಗೆ ಅನುಗುಣವಾಗಿ ಬದಲಾಗುತ್ತದೆ, ಒಂದೇ ಮೌಲ್ಯ ಇಲ್ಲ.',
+infoNote:'ಇವು ಅಂದಾಜು ಸಾಮಾನ್ಯ ಮೌಲ್ಯಗಳು, ಜಿಲ್ಲೆವಾರು ಪರಿಶೀಲಿಸಿಲ್ಲ. NPK ಎಂದರೆ ಸಾಮಾನ್ಯ ಗೊಬ್ಬರದ ಪ್ರಮಾಣ, ಮಣ್ಣಿನ ಮಟ್ಟ ಅಲ್ಲ. ಗೊಬ್ಬರ ಹಾಕುವ ಮುನ್ನ ಮಣ್ಣಿನ ಪರೀಕ್ಷೆ ಮಾಡಿಸಿ.'
 }};
+
+const UNITS={
+en:{kgha:'kg/ha',kgpalm:'kg/palm/year',gpalm:'g/palm/year',gtree:'g/tree/year',gvine:'g/vine/year',gplant:'g/plant'},
+kn:{kgha:'ಕೆಜಿ/ಹೆಕ್ಟೇರ್',kgpalm:'ಕೆಜಿ/ಮರ/ವರ್ಷ',gpalm:'ಗ್ರಾಂ/ಮರ/ವರ್ಷ',gtree:'ಗ್ರಾಂ/ಮರ/ವರ್ಷ',gvine:'ಗ್ರಾಂ/ಬಳ್ಳಿ/ವರ್ಷ',gplant:'ಗ್ರಾಂ/ಗಿಡ'}
+};
+
+// Approximate typical values (not verified).
+// [temp min, temp max, humidity min, humidity max, yearly rain min, yearly rain max, pH min, pH max, [N,P,K,unit] or null]
+const INFO={
+'jowar':[26,30,40,70,400,1000,6,8,[80,40,40,'kgha']],
+'maize':[21,27,50,80,600,1100,5.8,7,[120,60,40,'kgha']],
+'wheat':[15,25,50,70,450,650,6,7.5,[100,50,40,'kgha']],
+'sugarcane':[21,27,70,80,1500,2500,6.5,7.5,[250,115,115,'kgha']],
+'pigeon pea':[20,30,60,70,600,1000,5.5,7,[25,50,0,'kgha']],
+'chickpea':[20,25,40,60,400,700,6,7.5,[25,50,25,'kgha']],
+'rice':[22,32,80,90,1000,2000,5.5,6.5,[100,50,50,'kgha']],
+'cotton':[21,30,50,80,600,1000,5.8,8,[100,50,50,'kgha']],
+'chilli':[20,30,60,70,600,1200,6,7,[100,50,50,'kgha']],
+'soybean':[20,30,60,80,600,1000,6,7,[30,60,40,'kgha']],
+'ragi':[20,30,60,80,500,1000,5,7.5,[50,40,25,'kgha']],
+'grapes':[15,35,50,70,500,900,6.5,7.5,null],
+'mulberry':[24,28,65,80,800,1500,6.2,6.8,[300,120,120,'kgha']],
+'mango':[24,30,50,70,750,1500,5.5,7.5,null],
+'coconut':[25,30,80,90,1500,2500,5.5,7,[0.5,0.32,1.2,'kgpalm']],
+'banana':[20,30,70,80,1200,2000,6,7.5,[200,60,200,'gplant']],
+'turmeric':[20,30,70,90,1500,2000,5.5,7.5,[120,60,120,'kgha']],
+'coffee':[15,30,70,90,1000,2500,6,6.5,[120,90,120,'kgha']],
+'arecanut':[14,36,70,90,750,4500,4.5,7.6,[100,40,140,'gpalm']],
+'black pepper':[23,32,70,90,1250,2000,5.5,6.5,[50,50,150,'gvine']],
+'tea':[13,30,70,90,1250,3000,4.5,5.5,null],
+'cardamom':[10,35,75,95,1500,4000,5,6.5,[75,75,150,'kgha']],
+'groundnut':[25,30,50,70,500,1000,6,6.5,[25,50,25,'kgha']],
+'onion':[13,25,60,70,650,750,6,7,[100,50,50,'kgha']],
+'cashew':[24,30,60,80,1000,2000,5,6.5,[500,125,125,'gtree']],
+'rubber':[25,30,80,90,2000,3000,4.5,6,null],
+'green gram':[25,35,60,70,600,900,6.2,7.2,[20,40,0,'kgha']],
+'sunflower':[20,25,50,70,500,750,6.5,8,[60,90,60,'kgha']],
+'potato':[15,20,80,90,500,700,5,6.5,[150,100,100,'kgha']],
+'orange':[15,30,50,70,1000,1500,5.5,7.5,null],
+'tomato':[20,27,60,70,600,1000,6,7,[150,100,50,'kgha']],
+'pearl millet':[25,35,40,60,400,750,6.5,7.5,[80,40,40,'kgha']],
+'pomegranate':[25,35,40,60,500,800,5.5,7.5,[625,250,250,'gtree']],
+'tobacco':[20,30,60,80,500,1000,5.5,6.5,null],
+'ginger':[19,28,70,90,1500,3000,5.5,6.5,[75,50,50,'kgha']]
+};
 
 const CROPS_KN={
 'jowar':'ಜೋಳ','maize':'ಮೆಕ್ಕೆಜೋಳ','wheat':'ಗೋಧಿ','sugarcane':'ಕಬ್ಬು','pigeon pea':'ತೊಗರಿ','chickpea':'ಕಡಲೆ',
@@ -191,13 +256,26 @@ const n=String(name||'').toLowerCase().replace(/\bdistrict\b/g,'').trim();
 return OTHER_NAMES[n]||Object.keys(DISTRICTS).find(d=>d.toLowerCase()===n)||'';
 }
 
+function infoHTML(c){
+const i=INFO[c];
+if(!i)return '<div class="info">'+t('noInfo')+'</div>';
+const n=i[8];
+const npk=n?n[0]+' : '+n[1]+' : '+n[2]+' '+UNITS[lang][n[3]]:t('varies');
+return '<div class="info">'+
+'🌡️ <b>'+t('temp')+':</b> '+i[0]+'–'+i[1]+' °C<br>'+
+'💧 <b>'+t('hum')+':</b> '+i[2]+'–'+i[3]+' %<br>'+
+'🌧️ <b>'+t('rain')+':</b> '+i[4]+'–'+i[5]+' mm<br>'+
+'🧪 <b>pH:</b> '+i[6]+'–'+i[7]+'<br>'+
+'🌱 <b>'+t('npk')+':</b> '+npk+'</div>';
+}
+
 function show(){
 const o=$('out'),d=$('district').value;
 o.style.display='block';outOpen=true;
 if(!d){o.innerHTML=t('choose');return}
-const list=DISTRICTS[d].split(',').map(c=>(E[c]||'🌱')+' '+cropName(c));
+const list=DISTRICTS[d].split(',').map(c=>'<details><summary>'+(E[c]||'🌱')+' '+cropName(c)+'</summary>'+infoHTML(c)+'</details>');
 const note=CHECKED.includes(d)?t('checked'):t('unver');
-o.innerHTML='<b>'+T[lang].title(distName(d))+'</b><div class="alt">'+list.join('<br>')+'<br><small>'+note+'</small></div>';
+o.innerHTML='<b>'+T[lang].title(distName(d))+'</b><div class="alt">'+list.join('')+'<small>'+t('tap')+'<br>'+note+'</small><br><small>'+t('infoNote')+'</small></div>';
 }
 
 function loc(){
