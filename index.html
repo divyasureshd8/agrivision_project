@@ -71,13 +71,14 @@ title:a=>'Crops grown in '+a+' district',
 checked:'Checked against online sources; list order is not an official ranking.',
 unver:'Unverified starter list.',
 tap:'Tap a crop to see what it needs.',
+season:'Season',
 temp:'Temperature',
 hum:'Humidity',
 rain:'Yearly rainfall',
 npk:'Fertilizer N : P : K',
 varies:'Varies',
-noInfo:'Varies by crop, no single value.',
-infoNote:'Approximate typical values, not verified for each district. NPK is a usual fertilizer dose, not a soil level. Do a soil test before applying fertilizer.'
+noInfo:'Other values vary by crop, no single value.',
+infoNote:'Approximate typical values and seasons, not verified for each district. Sowing time changes with irrigation and local weather. NPK is a usual fertilizer dose, not a soil level. Do a soil test before applying fertilizer.'
 },
 kn:{
 sub:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
@@ -101,14 +102,31 @@ title:a=>a+' ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳ�
 checked:'ಆನ್‌ಲೈನ್ ಮೂಲಗಳಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ; ಪಟ್ಟಿಯ ಕ್ರಮ ಅಧಿಕೃತ ಶ್ರೇಣಿಯಲ್ಲ.',
 unver:'ಪರಿಶೀಲಿಸದ ಆರಂಭಿಕ ಪಟ್ಟಿ.',
 tap:'ಬೆಳೆಯ ಅಗತ್ಯಗಳನ್ನು ನೋಡಲು ಅದರ ಮೇಲೆ ಒತ್ತಿ.',
+season:'ಋತು',
 temp:'ತಾಪಮಾನ',
 hum:'ಆರ್ದ್ರತೆ',
 rain:'ವಾರ್ಷಿಕ ಮಳೆ',
 npk:'ರಸಗೊಬ್ಬರ N : P : K',
 varies:'ಬದಲಾಗುತ್ತದೆ',
-noInfo:'ಬೆಳೆಗೆ ಅನುಗುಣವಾಗಿ ಬದಲಾಗುತ್ತದೆ, ಒಂದೇ ಮೌಲ್ಯ ಇಲ್ಲ.',
-infoNote:'ಇವು ಅಂದಾಜು ಸಾಮಾನ್ಯ ಮೌಲ್ಯಗಳು, ಜಿಲ್ಲೆವಾರು ಪರಿಶೀಲಿಸಿಲ್ಲ. NPK ಎಂದರೆ ಸಾಮಾನ್ಯ ಗೊಬ್ಬರದ ಪ್ರಮಾಣ, ಮಣ್ಣಿನ ಮಟ್ಟ ಅಲ್ಲ. ಗೊಬ್ಬರ ಹಾಕುವ ಮುನ್ನ ಮಣ್ಣಿನ ಪರೀಕ್ಷೆ ಮಾಡಿಸಿ.'
+noInfo:'ಉಳಿದ ಮೌಲ್ಯಗಳು ಬೆಳೆಗೆ ಅನುಗುಣವಾಗಿ ಬದಲಾಗುತ್ತವೆ, ಒಂದೇ ಮೌಲ್ಯ ಇಲ್ಲ.',
+infoNote:'ಇವು ಅಂದಾಜು ಸಾಮಾನ್ಯ ಮೌಲ್ಯಗಳು ಮತ್ತು ಋತುಗಳು, ಜಿಲ್ಲೆವಾರು ಪರಿಶೀಲಿಸಿಲ್ಲ. ಬಿತ್ತನೆ ಸಮಯ ನೀರಾವರಿ ಮತ್ತು ಸ್ಥಳೀಯ ಹವಾಮಾನದ ಮೇಲೆ ಬದಲಾಗುತ್ತದೆ. NPK ಎಂದರೆ ಸಾಮಾನ್ಯ ಗೊಬ್ಬರದ ಪ್ರಮಾಣ, ಮಣ್ಣಿನ ಮಟ್ಟ ಅಲ್ಲ. ಗೊಬ್ಬರ ಹಾಕುವ ಮುನ್ನ ಮಣ್ಣಿನ ಪರೀಕ್ಷೆ ಮಾಡಿಸಿ.'
 }};
+
+// Seasons: K = Kharif, R = Rabi, S = Summer, Y = year-round / perennial
+const SEASON_NAMES={
+en:{K:'Kharif (Jun–Oct)',R:'Rabi (Oct–Feb)',S:'Summer (Mar–Jun)',Y:'Year-round / perennial'},
+kn:{K:'ಮುಂಗಾರು (ಜೂನ್–ಅಕ್ಟೋಬರ್)',R:'ಹಿಂಗಾರು (ಅಕ್ಟೋಬರ್–ಫೆಬ್ರವರಿ)',S:'ಬೇಸಿಗೆ (ಮಾರ್ಚ್–ಜೂನ್)',Y:'ವರ್ಷಪೂರ್ತಿ / ಬಹುವಾರ್ಷಿಕ'}
+};
+// Approximate, not verified for each district
+const SEASONS={
+'jowar':'KR','maize':'KRS','wheat':'R','sugarcane':'Y','pigeon pea':'K','chickpea':'R',
+'rice':'KRS','cotton':'K','chilli':'KR','soybean':'K','ragi':'KRS','grapes':'Y',
+'vegetables':'Y','mulberry':'Y','mango':'Y','coconut':'Y','banana':'Y','turmeric':'K',
+'coffee':'Y','arecanut':'Y','black pepper':'Y','tea':'Y','cardamom':'Y','groundnut':'KRS',
+'onion':'KR','cashew':'Y','rubber':'Y','green gram':'KRS','sunflower':'KRS',
+'potato':'KR','orange':'Y','tomato':'Y','pearl millet':'KS','pomegranate':'Y',
+'tobacco':'KR','ginger':'K'
+};
 
 const UNITS={
 en:{kgha:'kg/ha',kgpalm:'kg/palm/year',gpalm:'g/palm/year',gtree:'g/tree/year',gvine:'g/vine/year',gplant:'g/plant'},
@@ -256,12 +274,19 @@ const n=String(name||'').toLowerCase().replace(/\bdistrict\b/g,'').trim();
 return OTHER_NAMES[n]||Object.keys(DISTRICTS).find(d=>d.toLowerCase()===n)||'';
 }
 
+function seasonLine(c){
+const s=SEASONS[c];
+if(!s)return '';
+const names=s.split('').map(k=>SEASON_NAMES[lang][k]).join(', ');
+return '📅 <b>'+t('season')+':</b> '+names+'<br>';
+}
+
 function infoHTML(c){
 const i=INFO[c];
-if(!i)return '<div class="info">'+t('noInfo')+'</div>';
+if(!i)return '<div class="info">'+seasonLine(c)+t('noInfo')+'</div>';
 const n=i[8];
 const npk=n?n[0]+' : '+n[1]+' : '+n[2]+' '+UNITS[lang][n[3]]:t('varies');
-return '<div class="info">'+
+return '<div class="info">'+seasonLine(c)+
 '🌡️ <b>'+t('temp')+':</b> '+i[0]+'–'+i[1]+' °C<br>'+
 '💧 <b>'+t('hum')+':</b> '+i[2]+'–'+i[3]+' %<br>'+
 '🌧️ <b>'+t('rain')+':</b> '+i[4]+'–'+i[5]+' mm<br>'+
@@ -301,3 +326,4 @@ show();
 setLang(lang);
 </script>
 </body></html>
+
