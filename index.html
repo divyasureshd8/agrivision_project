@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Agrivision</title>
 <style>
@@ -7,6 +7,9 @@ body{margin:0;font-family:sans-serif;background:#f1f8e9;color:#1b1b1b}
 header{background:#2e7d32;color:#fff;padding:24px 16px;text-align:center}
 header h1{margin:0;font-size:28px}
 header p{margin:6px 0 0;opacity:.9}
+.lang{display:flex;gap:8px;justify-content:center;margin-top:14px}
+.lang button{width:auto;padding:6px 18px;font-size:15px;background:transparent;color:#fff;border:2px solid #fff;border-radius:20px}
+.lang button.on{background:#fff;color:#2e7d32;font-weight:bold}
 main{max-width:420px;margin:-12px auto 30px;padding:0 16px}
 .card{background:#fff;border-radius:14px;padding:18px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 label{font-size:14px;color:#444}
@@ -17,22 +20,95 @@ button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:
 .alt{margin-top:8px;color:#555;line-height:1.6}
 footer{text-align:center;font-size:12px;color:#777;padding:0 12px 20px}
 </style></head><body>
-<header><h1>🌱 Agrivision</h1><p>Crops grown in your district</p></header>
+<header>
+<h1>🌱 Agrivision</h1>
+<p id="sub"></p>
+<div class="lang">
+<button id="b-en" onclick="setLang('en')">English</button>
+<button id="b-kn" onclick="setLang('kn')">ಕನ್ನಡ</button>
+</div>
+</header>
 <main>
 <div class="card">
-<button class="loc" onclick="loc()">📍 Use my location</button>
-<div id="msg">Finds your Karnataka district. Please check it.</div>
-<label>District</label>
-<select id="district" onchange="show()"><option value="">Select district</option></select>
-<button onclick="show()">Show crops</button>
+<button class="loc" id="locBtn" onclick="loc()"></button>
+<div id="msg"></div>
+<label id="distLabel"></label>
+<select id="district" onchange="show()"></select>
+<button id="showBtn" onclick="show()"></button>
 </div>
 <div class="card" id="out" style="display:none"></div>
 </main>
-<footer>Learning project, not agronomic advice<br>
-Location is sent to OpenStreetMap. District lookup © OpenStreetMap contributors.</footer>
+<footer id="foot"></footer>
 <script>
 const $=id=>document.getElementById(id);
 const E={rice:'🌾',maize:'🌽',chickpea:'🫛','pigeon pea':'🫛','green gram':'🫛',pomegranate:'🍎',banana:'🍌',mango:'🥭',grapes:'🍇',orange:'🍊',coconut:'🥥',cotton:'☁️',coffee:'☕'};
+
+// Page text in both languages
+const T={
+en:{
+sub:'Crops grown in your district',
+locBtn:'📍 Use my location',
+distLabel:'District',
+pick:'Select district',
+showBtn:'Show crops',
+foot:'Learning project, not agronomic advice<br>Location is sent to OpenStreetMap. District lookup © OpenStreetMap contributors.',
+intro:'Finds your Karnataka district. Please check it.',
+noGeo:'Location is not supported on this device.',
+getting:'Getting your location…',
+finding:'Finding your district…',
+notKa:'You do not seem to be in Karnataka. Please choose a district.',
+noMatch:'Could not match your district. Please choose it.',
+found:'Found: ',
+check:'. Please check it.',
+fail:'Could not find your district. Please choose it.',
+blocked:'Location blocked or unavailable. Please choose a district.',
+choose:'Please select a district.',
+title:a=>'Crops grown in '+a+' district',
+checked:'Checked against online sources; list order is not an official ranking.',
+unver:'Unverified starter list.'
+},
+kn:{
+sub:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
+locBtn:'📍 ನನ್ನ ಸ್ಥಳ ಬಳಸಿ',
+distLabel:'ಜಿಲ್ಲೆ',
+pick:'ಜಿಲ್ಲೆ ಆಯ್ಕೆಮಾಡಿ',
+showBtn:'ಬೆಳೆಗಳನ್ನು ತೋರಿಸಿ',
+foot:'ಇದು ಕಲಿಕೆಯ ಯೋಜನೆ, ಕೃಷಿ ಸಲಹೆಯಲ್ಲ<br>ನಿಮ್ಮ ಸ್ಥಳವನ್ನು OpenStreetMap ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಜಿಲ್ಲೆ ಹುಡುಕಾಟ © OpenStreetMap ಕೊಡುಗೆದಾರರು.',
+intro:'ನಿಮ್ಮ ಕರ್ನಾಟಕ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕುತ್ತದೆ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.',
+noGeo:'ಈ ಸಾಧನದಲ್ಲಿ ಸ್ಥಳ ಸೌಲಭ್ಯ ಲಭ್ಯವಿಲ್ಲ.',
+getting:'ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪಡೆಯಲಾಗುತ್ತಿದೆ…',
+finding:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…',
+notKa:'ನೀವು ಕರ್ನಾಟಕದಲ್ಲಿ ಇದ್ದಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
+noMatch:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹೊಂದಿಸಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಆರಿಸಿ.',
+found:'ಸಿಕ್ಕಿದ ಜಿಲ್ಲೆ: ',
+check:'. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.',
+fail:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಆರಿಸಿ.',
+blocked:'ಸ್ಥಳಕ್ಕೆ ಅನುಮತಿ ಇಲ್ಲ ಅಥವಾ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
+choose:'ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
+title:a=>a+' ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
+checked:'ಆನ್‌ಲೈನ್ ಮೂಲಗಳಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ; ಪಟ್ಟಿಯ ಕ್ರಮ ಅಧಿಕೃತ ಶ್ರೇಣಿಯಲ್ಲ.',
+unver:'ಪರಿಶೀಲಿಸದ ಆರಂಭಿಕ ಪಟ್ಟಿ.'
+}};
+
+const CROPS_KN={
+'jowar':'ಜೋಳ','maize':'ಮೆಕ್ಕೆಜೋಳ','wheat':'ಗೋಧಿ','sugarcane':'ಕಬ್ಬು','pigeon pea':'ತೊಗರಿ','chickpea':'ಕಡಲೆ',
+'rice':'ಭತ್ತ','cotton':'ಹತ್ತಿ','chilli':'ಮೆಣಸಿನಕಾಯಿ','soybean':'ಸೋಯಾಬೀನ್','ragi':'ರಾಗಿ','grapes':'ದ್ರಾಕ್ಷಿ',
+'vegetables':'ತರಕಾರಿಗಳು','mulberry':'ಹಿಪ್ಪುನೇರಳೆ','mango':'ಮಾವು','coconut':'ತೆಂಗು','banana':'ಬಾಳೆ','turmeric':'ಅರಿಶಿನ',
+'coffee':'ಕಾಫಿ','arecanut':'ಅಡಿಕೆ','black pepper':'ಕರಿಮೆಣಸು','tea':'ಚಹಾ','cardamom':'ಏಲಕ್ಕಿ','groundnut':'ಕಡಲೆಕಾಯಿ',
+'onion':'ಈರುಳ್ಳಿ','cashew':'ಗೋಡಂಬಿ','rubber':'ರಬ್ಬರ್','green gram':'ಹೆಸರುಕಾಳು','sunflower':'ಸೂರ್ಯಕಾಂತಿ',
+'potato':'ಆಲೂಗಡ್ಡೆ','orange':'ಕಿತ್ತಳೆ','tomato':'ಟೊಮೆಟೊ','pearl millet':'ಸಜ್ಜೆ','pomegranate':'ದಾಳಿಂಬೆ',
+'tobacco':'ತಂಬಾಕು','ginger':'ಶುಂಠಿ'
+};
+
+const DISTRICTS_KN={
+'Bagalkote':'ಬಾಗಲಕೋಟೆ','Ballari':'ಬಳ್ಳಾರಿ','Belagavi':'ಬೆಳಗಾವಿ','Bengaluru North':'ಬೆಂಗಳೂರು ಉತ್ತರ',
+'Bengaluru South':'ಬೆಂಗಳೂರು ದಕ್ಷಿಣ','Bengaluru Urban':'ಬೆಂಗಳೂರು ನಗರ','Bidar':'ಬೀದರ್','Chamarajanagar':'ಚಾಮರಾಜನಗರ',
+'Chikkaballapura':'ಚಿಕ್ಕಬಳ್ಳಾಪುರ','Chikkamagaluru':'ಚಿಕ್ಕಮಗಳೂರು','Chitradurga':'ಚಿತ್ರದುರ್ಗ','Dakshina Kannada':'ದಕ್ಷಿಣ ಕನ್ನಡ',
+'Davanagere':'ದಾವಣಗೆರೆ','Dharwad':'ಧಾರವಾಡ','Gadag':'ಗದಗ','Hassan':'ಹಾಸನ','Haveri':'ಹಾವೇರಿ','Kalaburagi':'ಕಲಬುರಗಿ',
+'Kodagu':'ಕೊಡಗು','Kolar':'ಕೋಲಾರ','Koppal':'ಕೊಪ್ಪಳ','Mandya':'ಮಂಡ್ಯ','Mysuru':'ಮೈಸೂರು','Raichur':'ರಾಯಚೂರು',
+'Shivamogga':'ಶಿವಮೊಗ್ಗ','Tumakuru':'ತುಮಕೂರು','Udupi':'ಉಡುಪಿ','Uttara Kannada':'ಉತ್ತರ ಕನ್ನಡ',
+'Vijayanagara':'ವಿಜಯನಗರ','Vijayapura':'ವಿಜಯಪುರ','Yadgir':'ಯಾದಗಿರಿ'
+};
 
 // Not official rankings. Only Hassan and Chikkamagaluru were checked against sources.
 const DISTRICTS={
@@ -72,8 +148,43 @@ const DISTRICTS={
 const OTHER_NAMES={bagalkot:'Bagalkote',bellary:'Ballari',belgaum:'Belagavi',bangalore:'Bengaluru Urban','bangalore urban':'Bengaluru Urban',bengaluru:'Bengaluru Urban','bangalore rural':'Bengaluru North','bengaluru rural':'Bengaluru North',ramanagara:'Bengaluru South',ramanagaram:'Bengaluru South',chamrajanagar:'Chamarajanagar',chamarajanagara:'Chamarajanagar',chikkaballapur:'Chikkaballapura',chikballapur:'Chikkaballapura',chikmagalur:'Chikkamagaluru',davangere:'Davanagere',dharwada:'Dharwad',gadaga:'Gadag',gulbarga:'Kalaburagi',coorg:'Kodagu',koppala:'Koppal',mysore:'Mysuru',raichuru:'Raichur',shimoga:'Shivamogga',tumkur:'Tumakuru',bijapur:'Vijayapura',yadagiri:'Yadgir'};
 const CHECKED=['Hassan','Chikkamagaluru'];
 
-Object.keys(DISTRICTS).forEach(d=>$('district').add(new Option(d,d)));
+let lang='en';
+try{lang=localStorage.getItem('lang')==='kn'?'kn':'en'}catch(e){}
+let msgKey='intro',msgArg='',outOpen=false;
+
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const t=k=>T[lang][k];
+const cropName=c=>lang==='kn'?(CROPS_KN[c]||cap(c)):cap(c);
+const distName=d=>lang==='kn'?(DISTRICTS_KN[d]||d):d;
+
+function setMsg(k,arg){msgKey=k;msgArg=arg||'';renderMsg()}
+function renderMsg(){
+$('msg').textContent=msgKey==='found'?t('found')+distName(msgArg)+t('check'):t(msgKey);
+}
+
+function buildSelect(){
+const s=$('district'),cur=s.value;
+s.innerHTML='';
+s.add(new Option(t('pick'),''));
+Object.keys(DISTRICTS).forEach(d=>s.add(new Option(distName(d),d)));
+s.value=cur;
+}
+
+function setLang(l){
+lang=l;
+try{localStorage.setItem('lang',l)}catch(e){}
+document.documentElement.lang=l;
+$('b-en').className=l==='en'?'on':'';
+$('b-kn').className=l==='kn'?'on':'';
+$('sub').textContent=t('sub');
+$('locBtn').textContent=t('locBtn');
+$('distLabel').textContent=t('distLabel');
+$('showBtn').textContent=t('showBtn');
+$('foot').innerHTML=t('foot');
+buildSelect();
+renderMsg();
+if(outOpen)show();
+}
 
 function matchDistrict(name){
 const n=String(name||'').toLowerCase().replace(/\bdistrict\b/g,'').trim();
@@ -82,32 +193,33 @@ return OTHER_NAMES[n]||Object.keys(DISTRICTS).find(d=>d.toLowerCase()===n)||'';
 
 function show(){
 const o=$('out'),d=$('district').value;
-o.style.display='block';
-if(!d){o.innerHTML='Please select a district.';return}
-const list=DISTRICTS[d].split(',').map(c=>(E[c]||'🌱')+' '+cap(c));
-const note=CHECKED.includes(d)?'Checked against online sources; list order is not an official ranking.':'Unverified starter list.';
-o.innerHTML='<b>Crops grown in '+d+' district</b><div class="alt">'+list.join('<br>')+'<br><small>'+note+'</small></div>';
+o.style.display='block';outOpen=true;
+if(!d){o.innerHTML=t('choose');return}
+const list=DISTRICTS[d].split(',').map(c=>(E[c]||'🌱')+' '+cropName(c));
+const note=CHECKED.includes(d)?t('checked'):t('unver');
+o.innerHTML='<b>'+T[lang].title(distName(d))+'</b><div class="alt">'+list.join('<br>')+'<br><small>'+note+'</small></div>';
 }
 
 function loc(){
-const m=$('msg');
-if(!navigator.geolocation){m.textContent='Location is not supported on this device.';return}
-m.textContent='Getting your location…';
+if(!navigator.geolocation){setMsg('noGeo');return}
+setMsg('getting');
 navigator.geolocation.getCurrentPosition(async pos=>{
 try{
-m.textContent='Finding your district…';
+setMsg('finding');
 const u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat='+pos.coords.latitude+'&lon='+pos.coords.longitude;
 const r=await fetch(u);
 if(!r.ok)throw 0;
 const a=(await r.json()).address||{};
-if(a.state!=='Karnataka'){m.textContent='You do not seem to be in Karnataka. Please choose a district.';return}
+if(a.state!=='Karnataka'){setMsg('notKa');return}
 const d=matchDistrict(a.state_district||a.county);
-if(!d){m.textContent='Could not match your district. Please choose it.';return}
+if(!d){setMsg('noMatch');return}
 $('district').value=d;
-m.textContent='Found: '+d+'. Please check it.';
+setMsg('found',d);
 show();
-}catch(e){m.textContent='Could not find your district. Please choose it.'}
-},()=>{m.textContent='Location blocked or unavailable. Please choose a district.'});
+}catch(e){setMsg('fail')}
+},()=>setMsg('blocked'));
 }
+
+setLang(lang);
 </script>
 </body></html>
