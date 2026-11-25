@@ -191,4 +191,36 @@ const f=a=>(E[a[0]]||'🌱')+' '+cap(a[0])+' ('+a[1].toFixed(0)+'%)';
 o.innerHTML=districtHTML()+'Model match from your inputs<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div>'+localHTML(sc);
 }
 </script>
+</body><script>
+(function(){
+// Option B: rule-based check (not ML). [min, max]
+const RULES={
+'Coffee (Arabica)':{t:[15,25],r:[1600,2500],p:[6,6.5]},
+'Coffee (Robusta)':{t:[20,30],r:[1000,2000],p:[6,6.5]},
+'Black pepper':{t:[23,32],r:[1250,2000],p:[5.5,6.5]},
+'Arecanut':{t:[14,36],r:[750,4500],p:[4.5,7.6]}
+};
+const btn=document.querySelector('button[onclick="go()"]');
+btn.insertAdjacentHTML('beforebegin','<label>Yearly rainfall in mm (for suitability rules)</label><input id="annualRain" type="number" placeholder="From local rainfall records">');
+const modelGo=window.go;
+window.go=function(){
+modelGo();
+const out=document.getElementById('out');
+const num=id=>parseFloat(document.getElementById(id).value);
+const v={t:num('temperature'),r:num('annualRain'),p:num('ph')};
+const names={t:'Temperature',r:'Yearly rain',p:'pH'};
+let h='<hr><b>Rule-based check (not ML)</b>';
+for(const crop in RULES){
+h+='<div class="alt"><b>'+crop+'</b>';
+for(const k in names){
+const [lo,hi]=RULES[crop][k],x=v[k];
+const s=isNaN(x)?'not entered':x<lo?'⚠️ below':x>hi?'⚠️ above':'✅ within';
+h+='<br>'+names[k]+': '+s+' ('+lo+'–'+hi+')';
+}
+h+='</div>';
+}
+out.insertAdjacentHTML('beforeend',h+'<small>Checks only these three factors. Temperature may be today’s reading, not the yearly climate. Soil drainage, shade, altitude and season are not checked.</small>');
+};
+})();
+</script>
 </body></html>
