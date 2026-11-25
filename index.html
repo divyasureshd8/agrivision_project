@@ -112,5 +112,39 @@ function showLocal(allPredictions, modelCrops) {
     `District: ${r.district}\n` +
     `Model results grown locally: ${matches || "none"}\n` +
     `Local crops the model can't assess: ${r.notInModel.join(", ") || "none"}`;
-}</script></body></html>
-  
+}
+  o.innerHTML='Best match<div class="best">'+f(sc[0])+'</div><div class="alt">Also possible:<br>'+f(sc[1])+'<br>'+f(sc[2])+'</div><div id="localResult" class="alt"></div>';
+showLocal(sc.map(a=>({crop:a[0],score:a[1]/100})),Object.keys(M.crops));
+}
+
+let userDistrict = null;
+
+function showLocal(allPredictions, modelCrops) {
+  const box = document.getElementById("localResult");
+  if (typeof regionalSuggestion !== "function") {
+    box.textContent = "District crop code is not loaded.";
+    return;
+  }
+  // Match other spellings the model may use
+  Object.assign(ALIASES, { pigeonpeas: "pigeon pea", mungbean: "green gram" });
+  if (!userDistrict) {
+    userDistrict = prompt("Enter your district:");
+  }
+  if (!userDistrict) return;
+  const r = regionalSuggestion(userDistrict, allPredictions, modelCrops);
+  if (!r.found) {
+    box.textContent = r.message;
+    userDistrict = null;
+    return;
+  }
+  const matches = r.localMatches
+    .map(p => `${p.crop} (model score ${(p.score * 100).toFixed(1)}%)`)
+    .join(", ");
+  box.innerText =
+    `District: ${r.district}\n` +
+    `Model results grown locally: ${matches || "none"}\n` +
+    `Local crops the model can't assess: ${r.notInModel.join(", ") || "none"}`;
+}
+</script>
+<script src="districtCrops.js"></script>
+</body></html>
