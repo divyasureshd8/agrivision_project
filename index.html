@@ -13,12 +13,13 @@ header p{margin:6px 0 0;opacity:.9}
 main{max-width:420px;margin:-12px auto 30px;padding:0 16px}
 .card{background:#fff;border-radius:14px;padding:18px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 label{font-size:14px;color:#444}
-select{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px;background:#fff;color:#1b1b1b}
+select,input{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px;background:#fff;color:#1b1b1b}
 button{width:100%;padding:12px;background:#2e7d32;color:#fff;border:0;border-radius:8px;font-size:17px}
 button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:6px}
 button.sm{width:auto;padding:5px 14px;font-size:14px;margin-top:6px;background:#fff;color:#2e7d32;border:2px solid #2e7d32}
 .row{display:flex;gap:8px;margin-bottom:8px}
 .row button{flex:1;padding:8px;font-size:15px;margin:0}
+.row input{flex:1;min-width:0}
 #msg{font-size:13px;color:#555;margin:6px 0 14px;min-height:16px}
 .alt{margin-top:8px;color:#555;line-height:1.6}
 details{border-bottom:1px solid #eee;padding:8px 0}
@@ -44,6 +45,18 @@ footer{text-align:center;font-size:12px;color:#777;padding:0 12px 20px}
 <select id="district" onchange="show()"></select>
 <button id="showBtn" onclick="show()"></button>
 </div>
+<div class="card">
+<b id="soilTitle"></b><br>
+<label id="phLabel"></label>
+<input id="ph" type="number" step="0.1" placeholder="e.g. 6.5" oninput="renderLand()">
+<label id="npkLabel"></label>
+<div class="row">
+<input id="N" type="number" placeholder="N" oninput="renderLand()">
+<input id="P" type="number" placeholder="P₂O₅" oninput="renderLand()">
+<input id="K" type="number" placeholder="K₂O" oninput="renderLand()">
+</div>
+</div>
+<div class="card" id="land" style="display:none"></div>
 <div class="card" id="out" style="display:none"></div>
 </main>
 <footer id="foot"></footer>
@@ -54,23 +67,25 @@ const E={rice:'🌾',maize:'🌽',chickpea:'🫛','pigeon pea':'🫛','green gra
 // Page text in both languages
 const T={
 en:{
-sub:'Crops grown in your district',
-locBtn:'📍 Use my location',
+sub:'Crops for your district and your land',
+locBtn:'📍 Use GPS of this land',
 micBtn:'🎤 Speak',
 distLabel:'District',
 pick:'Select district',
-showBtn:'Show crops',
-foot:'Learning project, not agronomic advice<br>Location is sent to OpenStreetMap. Voice input is processed by your browser’s speech service. District lookup © OpenStreetMap contributors.',
-intro:'Use location, or tap Speak and say a district or crop name.',
+showBtn:'Show district crops',
+foot:'Learning project, not agronomic advice<br>Your GPS location is sent to Open-Meteo, SoilGrids and OpenStreetMap. Voice input is processed by your browser’s speech service. District lookup © OpenStreetMap contributors.',
+intro:'Stand on your land and tap GPS, or tap Speak and say a district or crop name.',
 noGeo:'Location is not supported on this device.',
-getting:'Getting your location…',
-finding:'Finding your district…',
+gathering:'Getting weather, soil and district for this spot…',
+gpsDone:'Land report is ready. Please check the district and pH.',
+weatherFail:'Could not get weather. Check your internet and try again.',
+soilFail:'Weather is ready, but soil data was not available here. Please type the pH yourself.',
 notKa:'You do not seem to be in Karnataka. Please choose a district.',
 noMatch:'Could not match your district. Please choose it.',
 found:'Found: ',
 check:'. Please check it.',
 fail:'Could not find your district. Please choose it.',
-blocked:'Location blocked or unavailable. Please choose a district.',
+blocked:'Location blocked or unavailable. Allow location access and try again.',
 choose:'Please select a district.',
 title:a=>'Crops grown in '+a+' district',
 checked:'Checked against online sources; list order is not an official ranking.',
@@ -92,26 +107,56 @@ noMatchVoice:'Sorry, I did not catch a district or crop name. Try saying “Hass
 noSpeech:'Voice input is not supported in this browser. Try Chrome.',
 noTts:'Reading aloud is not supported on this device.',
 micDenied:'Microphone blocked. Allow microphone access and try again.',
-noVoiceHint:''
+noVoiceHint:'',
+soilTitle:'Soil values for your land',
+phLabel:'Soil pH (auto estimate, editable)',
+npkLabel:'Soil test N, P₂O₅, K₂O in kg/ha (optional, from Soil Health Card)',
+landTitle:'Your land report',
+landPlace:'Place',
+acc:a=>'GPS accuracy about '+a+' m',
+accWeak:'Accuracy is low. Stand in the open and tap GPS again.',
+nowLbl:'Now',
+tAvgLbl:'Average temperature (last 12 months)',
+hAvgLbl:'Average humidity (last 12 months)',
+rainLbl:'Rainfall (last 12 months)',
+phLbl:'Soil pH',
+nTotLbl:'Total nitrogen (satellite estimate)',
+nTotNote:'This is total nitrogen, not the available nitrogen in a soil test.',
+nN:'Nitrogen (N)',
+nP:'Phosphorus (P₂O₅)',
+nK:'Potassium (K₂O)',
+low:'Low',
+med:'Medium',
+high:'High',
+npkNote:'Satellites cannot give available N, P and K for one field. Only a soil test can. Levels use common Indian soil test ratings. Ask the agriculture department for a Soil Health Card.',
+npkEnter:'Type N, P₂O₅ and K₂O from a soil test to see their levels.',
+recTitle:'Crops that suit this land',
+recNote:'Compared with approximate crop needs. Irrigation can make up for low rainfall. Not verified for each district. Please confirm with the agriculture department.',
+grownHere:'grown in this district',
+within:'within',
+below:'below',
+above:'above'
 },
 kn:{
-sub:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
-locBtn:'📍 ನನ್ನ ಸ್ಥಳ ಬಳಸಿ',
+sub:'ನಿಮ್ಮ ಜಿಲ್ಲೆ ಮತ್ತು ಜಮೀನಿಗೆ ಬೆಳೆಗಳು',
+locBtn:'📍 ಈ ಜಮೀನಿನ GPS ಬಳಸಿ',
 micBtn:'🎤 ಮಾತನಾಡಿ',
 distLabel:'ಜಿಲ್ಲೆ',
 pick:'ಜಿಲ್ಲೆ ಆಯ್ಕೆಮಾಡಿ',
-showBtn:'ಬೆಳೆಗಳನ್ನು ತೋರಿಸಿ',
-foot:'ಇದು ಕಲಿಕೆಯ ಯೋಜನೆ, ಕೃಷಿ ಸಲಹೆಯಲ್ಲ<br>ನಿಮ್ಮ ಸ್ಥಳವನ್ನು OpenStreetMap ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಅನ್ನು ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನ ಸ್ಪೀಚ್ ಸೇವೆ ಸಂಸ್ಕರಿಸುತ್ತದೆ. ಜಿಲ್ಲೆ ಹುಡುಕಾಟ © OpenStreetMap ಕೊಡುಗೆದಾರರು.',
-intro:'ಸ್ಥಳ ಬಳಸಿ, ಅಥವಾ “ಮಾತನಾಡಿ” ಒತ್ತಿ ಜಿಲ್ಲೆ ಅಥವಾ ಬೆಳೆಯ ಹೆಸರು ಹೇಳಿ.',
+showBtn:'ಜಿಲ್ಲೆಯ ಬೆಳೆಗಳನ್ನು ತೋರಿಸಿ',
+foot:'ಇದು ಕಲಿಕೆಯ ಯೋಜನೆ, ಕೃಷಿ ಸಲಹೆಯಲ್ಲ<br>ನಿಮ್ಮ GPS ಸ್ಥಳವನ್ನು Open-Meteo, SoilGrids ಮತ್ತು OpenStreetMap ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಅನ್ನು ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನ ಸ್ಪೀಚ್ ಸೇವೆ ಸಂಸ್ಕರಿಸುತ್ತದೆ. ಜಿಲ್ಲೆ ಹುಡುಕಾಟ © OpenStreetMap ಕೊಡುಗೆದಾರರು.',
+intro:'ಜಮೀನಿನಲ್ಲಿ ನಿಂತು GPS ಒತ್ತಿ, ಅಥವಾ “ಮಾತನಾಡಿ” ಒತ್ತಿ ಜಿಲ್ಲೆ ಅಥವಾ ಬೆಳೆಯ ಹೆಸರು ಹೇಳಿ.',
 noGeo:'ಈ ಸಾಧನದಲ್ಲಿ ಸ್ಥಳ ಸೌಲಭ್ಯ ಲಭ್ಯವಿಲ್ಲ.',
-getting:'ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪಡೆಯಲಾಗುತ್ತಿದೆ…',
-finding:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…',
+gathering:'ಈ ಸ್ಥಳದ ಹವಾಮಾನ, ಮಣ್ಣು ಮತ್ತು ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…',
+gpsDone:'ಜಮೀನಿನ ವರದಿ ಸಿದ್ಧವಾಗಿದೆ. ಜಿಲ್ಲೆ ಮತ್ತು pH ಪರಿಶೀಲಿಸಿ.',
+weatherFail:'ಹವಾಮಾನ ಸಿಗಲಿಲ್ಲ. ಇಂಟರ್ನೆಟ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+soilFail:'ಹವಾಮಾನ ಸಿಕ್ಕಿದೆ, ಆದರೆ ಇಲ್ಲಿನ ಮಣ್ಣಿನ ಮಾಹಿತಿ ಸಿಗಲಿಲ್ಲ. pH ಅನ್ನು ನೀವೇ ಬರೆಯಿರಿ.',
 notKa:'ನೀವು ಕರ್ನಾಟಕದಲ್ಲಿ ಇದ್ದಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
 noMatch:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹೊಂದಿಸಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಆರಿಸಿ.',
 found:'ಸಿಕ್ಕಿದ ಜಿಲ್ಲೆ: ',
 check:'. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.',
 fail:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಆರಿಸಿ.',
-blocked:'ಸ್ಥಳಕ್ಕೆ ಅನುಮತಿ ಇಲ್ಲ ಅಥವಾ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
+blocked:'ಸ್ಥಳಕ್ಕೆ ಅನುಮತಿ ಇಲ್ಲ ಅಥವಾ ಲಭ್ಯವಿಲ್ಲ. ಅನುಮತಿ ನೀಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
 choose:'ದಯವಿಟ್ಟು ಜಿಲ್ಲೆಯನ್ನು ಆರಿಸಿ.',
 title:a=>a+' ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
 checked:'ಆನ್‌ಲೈನ್ ಮೂಲಗಳಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ; ಪಟ್ಟಿಯ ಕ್ರಮ ಅಧಿಕೃತ ಶ್ರೇಣಿಯಲ್ಲ.',
@@ -133,7 +178,35 @@ noMatchVoice:'ಕ್ಷಮಿಸಿ, ಜಿಲ್ಲೆ ಅಥವಾ ಬೆಳ�
 noSpeech:'ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಬೆಂಬಲಿಸುವುದಿಲ್ಲ. Chrome ಬಳಸಿ.',
 noTts:'ಈ ಸಾಧನದಲ್ಲಿ ಧ್ವನಿಯಲ್ಲಿ ಓದುವ ಸೌಲಭ್ಯ ಇಲ್ಲ.',
 micDenied:'ಮೈಕ್ರೋಫೋನ್ ಅನುಮತಿ ಇಲ್ಲ. ಅನುಮತಿ ನೀಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
-noVoiceHint:'ಧ್ವನಿ ಕೇಳಿಸದಿದ್ದರೆ, ಫೋನ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನ ಟೆಕ್ಸ್ಟ್-ಟು-ಸ್ಪೀಚ್‌ನಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ.'
+noVoiceHint:'ಧ್ವನಿ ಕೇಳಿಸದಿದ್ದರೆ, ಫೋನ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನ ಟೆಕ್ಸ್ಟ್-ಟು-ಸ್ಪೀಚ್‌ನಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ.',
+soilTitle:'ನಿಮ್ಮ ಜಮೀನಿನ ಮಣ್ಣಿನ ಮೌಲ್ಯಗಳು',
+phLabel:'ಮಣ್ಣಿನ pH (ಸ್ವಯಂ ಅಂದಾಜು, ಬದಲಾಯಿಸಬಹುದು)',
+npkLabel:'ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಯ N, P₂O₅, K₂O ಕೆಜಿ/ಹೆಕ್ಟೇರ್ (ಐಚ್ಛಿಕ, ಮಣ್ಣು ಆರೋಗ್ಯ ಕಾರ್ಡ್‌ನಿಂದ)',
+landTitle:'ನಿಮ್ಮ ಜಮೀನಿನ ವರದಿ',
+landPlace:'ಸ್ಥಳ',
+acc:a=>'GPS ನಿಖರತೆ ಸುಮಾರು '+a+' ಮೀ',
+accWeak:'ನಿಖರತೆ ಕಡಿಮೆ ಇದೆ. ತೆರೆದ ಜಾಗದಲ್ಲಿ ನಿಂತು ಮತ್ತೆ GPS ಒತ್ತಿ.',
+nowLbl:'ಈಗ',
+tAvgLbl:'ಸರಾಸರಿ ತಾಪಮಾನ (ಕಳೆದ 12 ತಿಂಗಳು)',
+hAvgLbl:'ಸರಾಸರಿ ಆರ್ದ್ರತೆ (ಕಳೆದ 12 ತಿಂಗಳು)',
+rainLbl:'ಮಳೆ (ಕಳೆದ 12 ತಿಂಗಳು)',
+phLbl:'ಮಣ್ಣಿನ pH',
+nTotLbl:'ಒಟ್ಟು ಸಾರಜನಕ (ಉಪಗ್ರಹ ಅಂದಾಜು)',
+nTotNote:'ಇದು ಒಟ್ಟು ಸಾರಜನಕ, ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಯ ಲಭ್ಯ ಸಾರಜನಕ ಅಲ್ಲ.',
+nN:'ಸಾರಜನಕ (N)',
+nP:'ರಂಜಕ (P₂O₅)',
+nK:'ಪೊಟ್ಯಾಶ್ (K₂O)',
+low:'ಕಡಿಮೆ',
+med:'ಮಧ್ಯಮ',
+high:'ಹೆಚ್ಚು',
+npkNote:'ಉಪಗ್ರಹದಿಂದ ಒಂದು ಹೊಲದ ಲಭ್ಯ N, P, K ತಿಳಿಯಲು ಆಗುವುದಿಲ್ಲ. ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಯಿಂದ ಮಾತ್ರ ಸಾಧ್ಯ. ಮಟ್ಟಗಳು ಭಾರತದಲ್ಲಿ ಸಾಮಾನ್ಯವಾಗಿ ಬಳಸುವ ಮಣ್ಣು ಪರೀಕ್ಷೆ ಶ್ರೇಣಿಗಳ ಆಧಾರದ ಮೇಲೆ ಇವೆ. ಕೃಷಿ ಇಲಾಖೆಯಿಂದ ಮಣ್ಣು ಆರೋಗ್ಯ ಕಾರ್ಡ್ ಪಡೆಯಿರಿ.',
+npkEnter:'ಮಟ್ಟ ನೋಡಲು ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಯ N, P₂O₅, K₂O ಬರೆಯಿರಿ.',
+recTitle:'ಈ ಜಮೀನಿಗೆ ಸೂಕ್ತ ಬೆಳೆಗಳು',
+recNote:'ಅಂದಾಜು ಬೆಳೆ ಅಗತ್ಯಗಳೊಂದಿಗೆ ಹೋಲಿಸಲಾಗಿದೆ. ನೀರಾವರಿಯಿಂದ ಕಡಿಮೆ ಮಳೆಯನ್ನು ಸರಿದೂಗಿಸಬಹುದು. ಜಿಲ್ಲೆವಾರು ಪರಿಶೀಲಿಸಿಲ್ಲ. ಕೃಷಿ ಇಲಾಖೆಯಲ್ಲಿ ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.',
+grownHere:'ಈ ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುತ್ತಾರೆ',
+within:'ಒಳಗೆ',
+below:'ಕಡಿಮೆ',
+above:'ಹೆಚ್ಚು'
 }};
 
 // Words used only when reading aloud
@@ -278,7 +351,7 @@ const CHECKED=['Hassan','Chikkamagaluru'];
 
 let lang='en';
 try{lang=localStorage.getItem('lang')==='kn'?'kn':'en'}catch(e){}
-let msgKey='intro',msgArg='',outOpen=false,view={k:'d'};
+let msgKey='intro',msgArg='',outOpen=false,view={k:'d'},LAND=null,REC=[];
 
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const t=k=>T[lang][k];
@@ -310,12 +383,16 @@ $('b-en').className=l==='en'?'on':'';
 $('b-kn').className=l==='kn'?'on':'';
 $('sub').textContent=t('sub');
 $('locBtn').textContent=t('locBtn');
-$('micBtn').textContent=t('micBtn');
+ $('micBtn').textContent=t('micBtn');
 $('distLabel').textContent=t('distLabel');
 $('showBtn').textContent=t('showBtn');
+$('soilTitle').textContent=t('soilTitle');
+$('phLabel').textContent=t('phLabel');
+$('npkLabel').textContent=t('npkLabel');
 $('foot').innerHTML=t('foot');
 buildSelect();
 renderMsg();
+renderLand();
 if(outOpen){if(view.k==='c')showCrop(view.c);else show()}
 }
 
@@ -363,6 +440,132 @@ o.style.display='block';outOpen=true;
 o.innerHTML='<div class="row"><button onclick="stopSpeak()">'+t('stopBtn')+'</button></div><b>'+(E[c]||'🌱')+' '+cropName(c)+'</b><div class="alt">'+infoHTML(c)+'<small>'+t('infoNote')+'</small></div>';
 }
 
+/* ---------- Land report from GPS ---------- */
+const f1=(x,d)=>isNaN(x)?'—':x.toFixed(d);
+function mark(x,lo,hi){return x<lo?'⚠️ '+t('below'):x>hi?'⚠️ '+t('above'):'✅ '+t('within')}
+// Common Indian soil test ratings (kg/ha): [low below, high above]
+const NPK_LV={N:[280,560],P:[23,57],K:[145,337]};
+function level(k,v){
+const r=NPK_LV[k];
+return v<r[0]?t('low'):v<=r[1]?t('med'):t('high');
+}
+
+function renderLand(){
+const o=$('land');
+if(!LAND){o.style.display='none';REC=[];return}
+o.style.display='block';
+const L=LAND;
+const ph=parseFloat($('ph').value);
+let h='<b>'+t('landTitle')+'</b><div class="info">'+
+'📍 <b>'+t('landPlace')+':</b> '+(L.place||'—')+'<br>'+
+'🧭 '+L.la.toFixed(5)+', '+L.lo.toFixed(5)+' ('+T[lang].acc(L.acc)+')'+(L.acc>100?'<br>⚠️ '+t('accWeak'):'')+'<br>'+
+'🌤️ <b>'+t('nowLbl')+':</b> '+f1(L.tNow,0)+' °C, '+f1(L.hNow,0)+' %<br>'+
+'🌡️ <b>'+t('tAvgLbl')+':</b> '+f1(L.tAvg,1)+' °C<br>'+
+'💧 <b>'+t('hAvgLbl')+':</b> '+f1(L.hAvg,0)+' %<br>'+
+'🌧️ <b>'+t('rainLbl')+':</b> '+f1(L.rain,0)+' mm<br>'+
+'🧪 <b>'+t('phLbl')+':</b> '+f1(ph,1)+'<br>'+
+'🧬 <b>'+t('nTotLbl')+':</b> '+f1(L.nTot,2)+' g/kg<br><small>'+t('nTotNote')+'</small><br>';
+const nv={N:parseFloat($('N').value),P:parseFloat($('P').value),K:parseFloat($('K').value)};
+const names={N:t('nN'),P:t('nP'),K:t('nK')};
+let any=false;
+['N','P','K'].forEach(k=>{if(!isNaN(nv[k])){any=true;h+='🌱 <b>'+names[k]+':</b> '+nv[k]+' kg/ha → '+level(k,nv[k])+'<br>'}});
+h+=any?'':'<small>'+t('npkEnter')+'</small><br>';
+h+='<small>'+t('npkNote')+'</small></div>';
+
+// Rank crops by how many of the four land factors fall in the crop's range
+const rec=[];
+for(const c in INFO){
+const i=INFO[c];
+const fs=[[L.tAvg,i[0],i[1],'🌡️',t('temp'),' °C'],[L.hAvg,i[2],i[3],'💧',t('hum'),' %'],[L.rain,i[4],i[5],'🌧️',t('rain'),' mm'],[ph,i[6],i[7],'🧪','pH','']];
+let ok=0,n=0,close=0;
+fs.forEach(a=>{const x=a[0],lo=a[1],hi=a[2];if(isNaN(x))return;n++;const d=x<lo?lo-x:x>hi?x-hi:0;if(!d)ok++;close+=Math.max(0,1-d/Math.max(hi-lo,1))});
+if(n)rec.push({c:c,ok:ok,n:n,close:close,fs:fs});
+}
+rec.sort((a,b)=>(b.ok/b.n-a.ok/a.n)||(b.close/b.n-a.close/a.n));
+REC=rec.slice(0,6);
+const dd=$('district').value;
+const local=c=>dd&&DISTRICTS[dd]&&DISTRICTS[dd].split(',').includes(c);
+h+='<div style="margin-top:14px;padding-top:10px;border-top:1px solid #ddd"><b>'+t('recTitle')+'</b>'+
+'<div class="row" style="margin-top:8px"><button onclick="readRec()">'+t('listenBtn')+'</button><button onclick="stopSpeak()">'+t('stopBtn')+'</button></div><div class="alt">';
+REC.forEach(r=>{
+let lines='';
+r.fs.forEach(a=>{if(isNaN(a[0]))return;lines+=a[3]+' <b>'+a[4]+':</b> '+f1(a[0],a[4]==='pH'?1:0)+a[5]+' → '+mark(a[0],a[1],a[2])+' ('+a[1]+'–'+a[2]+')<br>'});
+h+='<details><summary>'+(E[r.c]||'🌱')+' '+cropName(r.c)+' — '+r.ok+'/'+r.n+' ✅'+(local(r.c)?' 🏡':'')+'</summary><div class="info">'+lines+'</div>'+infoHTML(r.c)+'</details>';
+});
+h+='<small>🏡 = '+t('grownHere')+'<br>'+t('recNote')+'</small></div></div>';
+o.innerHTML=h;
+}
+
+function iso(d){return d.toISOString().slice(0,10)}
+async function getWeather(L){
+const avg=a=>{const v=a.filter(x=>x!=null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:NaN};
+const sum=a=>a.filter(x=>x!=null).reduce((s,x)=>s+x,0);
+try{
+const u='https://api.open-meteo.com/v1/forecast?latitude='+L.la+'&longitude='+L.lo+'&current=temperature_2m,relative_humidity_2m&timezone=auto';
+const j=await (await fetch(u)).json();
+L.tNow=j.current.temperature_2m;L.hNow=j.current.relative_humidity_2m;
+L.wOk=true;
+}catch(e){}
+try{
+// Last 12 months. The archive is a few days behind, so end 5 days ago.
+const end=new Date(Date.now()-5*864e5),start=new Date(end.getTime()-364*864e5);
+const u='https://archive-api.open-meteo.com/v1/archive?latitude='+L.la+'&longitude='+L.lo+'&start_date='+iso(start)+'&end_date='+iso(end)+'&daily=temperature_2m_mean,relative_humidity_2m_mean,precipitation_sum&timezone=auto';
+const j=await (await fetch(u)).json();
+L.tAvg=avg(j.daily.temperature_2m_mean);
+L.hAvg=avg(j.daily.relative_humidity_2m_mean);
+L.rain=sum(j.daily.precipitation_sum);
+L.wOk=true;
+}catch(e){}
+}
+
+async function getSoil(L){
+try{
+const u='https://rest.isric.org/soilgrids/v2.0/properties/query?lon='+L.lo+'&lat='+L.la+'&property=phh2o&property=nitrogen&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean';
+const j=await (await fetch(u)).json();
+const get=name=>{
+const l=j.properties.layers.find(x=>x.name===name);
+const v=l.depths.map(d=>d.values.mean).filter(x=>x!=null);
+return v.length?v.reduce((s,x)=>s+x,0)/v.length:NaN;
+};
+const ph=get('phh2o')/10,n=get('nitrogen')/100;
+if(isNaN(ph))throw 0;
+$('ph').value=ph.toFixed(1);
+L.nTot=n;
+L.sOk=true;
+}catch(e){}
+}
+
+async function findDistrict(L){
+try{
+const u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=en&lat='+L.la+'&lon='+L.lo;
+const r=await fetch(u);
+if(!r.ok)return;
+const a=(await r.json()).address||{};
+L.place=[a.village||a.hamlet||a.town||a.suburb||a.city,a.state_district||a.county].filter(Boolean).join(', ');
+if(a.state!=='Karnataka'){L.dState='notKa';return}
+const d=matchDistrict(a.state_district||a.county);
+if(d){L.dist=d;L.dState='ok';$('district').value=d}else L.dState='noMatch';
+}catch(e){}
+}
+
+function loc(){
+if(!navigator.geolocation){setMsg('noGeo');return}
+setMsg('gathering');
+navigator.geolocation.getCurrentPosition(async pos=>{
+const L={la:pos.coords.latitude,lo:pos.coords.longitude,acc:Math.round(pos.coords.accuracy),place:'',dist:'',dState:'fail',wOk:false,sOk:false,tNow:NaN,hNow:NaN,tAvg:NaN,hAvg:NaN,rain:NaN,nTot:NaN};
+LAND=L;
+$('ph').value='';
+await Promise.all([findDistrict(L),getWeather(L),getSoil(L)]);
+if(L!==LAND)return;
+if(!L.wOk)setMsg('weatherFail');
+else if(!L.sOk)setMsg('soilFail');
+else if(L.dist)setMsg('gpsDone');
+else setMsg(L.dState==='notKa'?'notKa':L.dState==='noMatch'?'noMatch':'fail');
+if(L.dist)show();
+renderLand();
+},()=>setMsg('blocked'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+
 /* ---------- Voice: read aloud ---------- */
 let voices=[];
 function loadVoices(){if('speechSynthesis' in window)voices=speechSynthesis.getVoices()}
@@ -402,6 +605,7 @@ s+=n?sp.fert+': '+sp.n+' '+n[0]+', '+sp.p+' '+n[1]+', '+sp.k+' '+n[2]+', '+sp.un
 return s;
 }
 function readList(){const d=$('district').value;if(d)speak(speechList(d))}
+function readRec(){if(REC.length)speak(t('recTitle')+'. '+REC.slice(0,3).map(r=>cropName(r.c)).join(', '))}
 function speakCrop(c){speak(speechInfo(c))}
 
 /* ---------- Voice: speak a district or crop name ---------- */
@@ -423,7 +627,7 @@ const texts=alts.map(a=>a.toLowerCase().trim());
 setMsg('heard',alts[0]);
 for(const s of texts){
 const d=best(DIST_KEYS,s);
-if(d){$('district').value=d;show();speak(speechList(d));return}
+if(d){$('district').value=d;show();renderLand();speak(speechList(d));return}
 }
 for(const s of texts){
 const c=best(CROP_KEYS,s);
@@ -447,28 +651,6 @@ r.onend=()=>{if(msgKey==='listening')setMsg('noMatchVoice')};
 try{r.start()}catch(e){setMsg('noMatchVoice')}
 }
 
-function loc(){
-if(!navigator.geolocation){setMsg('noGeo');return}
-setMsg('getting');
-navigator.geolocation.getCurrentPosition(async pos=>{
-try{
-setMsg('finding');
-const u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat='+pos.coords.latitude+'&lon='+pos.coords.longitude;
-const r=await fetch(u);
-if(!r.ok)throw 0;
-const a=(await r.json()).address||{};
-if(a.state!=='Karnataka'){setMsg('notKa');return}
-const d=matchDistrict(a.state_district||a.county);
-if(!d){setMsg('noMatch');return}
-$('district').value=d;
-setMsg('found',d);
-show();
-}catch(e){setMsg('fail')}
-},()=>setMsg('blocked'));
-}
-
 setLang(lang);
 </script>
-</body></html>
-
-
+</body></html> 
