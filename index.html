@@ -401,6 +401,74 @@ const n=i[8];
 s+=n?sp.fert+': '+sp.n+' '+n[0]+', '+sp.p+' '+n[1]+', '+sp.k+' '+n[2]+', '+sp.units[n[3]]+'.':sp.fert+': '+t('varies')+'.';
 return s;
 }
-function read
+function readList(){const d=$('district').value;if(d)speak(speechList(d))}
+function speakCrop(c){speak(speechInfo(c))}
+
+/* ---------- Voice: speak a district or crop name ---------- */
+const DIST_KEYS=[];
+Object.keys(DISTRICTS).forEach(d=>{DIST_KEYS.push([d.toLowerCase(),d]);DIST_KEYS.push([DISTRICTS_KN[d],d])});
+Object.keys(OTHER_NAMES).forEach(k=>DIST_KEYS.push([k,OTHER_NAMES[k]]));
+Object.keys(VOICE_ALIASES).forEach(k=>DIST_KEYS.push([k,VOICE_ALIASES[k]]));
+const CROP_KEYS=[];
+Object.keys(CROPS_KN).forEach(c=>{CROP_KEYS.push([c,c]);CROP_KEYS.push([CROPS_KN[c],c])});
+// Longest name wins, e.g. "ಕಡಲೆಕಾಯಿ" beats "ಕಡಲೆ"
+function best(list,s){
+let b=null;
+list.forEach(([k,v])=>{if(k&&s.includes(k)&&(!b||k.length>b[0].length))b=[k,v]});
+return b&&b[1];
+}
+
+function handleVoice(alts){
+const texts=alts.map(a=>a.toLowerCase().trim());
+setMsg('heard',alts[0]);
+for(const s of texts){
+const d=best(DIST_KEYS,s);
+if(d){$('district').value=d;show();speak(speechList(d));return}
+}
+for(const s of texts){
+const c=best(CROP_KEYS,s);
+if(c){showCrop(c);speak(speechInfo(c));return}
+}
+setMsg('noMatchVoice');
+}
+
+function listen(){
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){setMsg('noSpeech');return}
+stopSpeak();
+const r=new SR();
+r.lang=lang==='kn'?'kn-IN':'en-IN';
+r.interimResults=false;
+r.maxAlternatives=3;
+setMsg('listening');
+r.onresult=e=>handleVoice(Array.from(e.results[0]).map(a=>a.transcript));
+r.onerror=e=>setMsg(e.error==='not-allowed'||e.error==='service-not-allowed'?'micDenied':'noMatchVoice');
+r.onend=()=>{if(msgKey==='listening')setMsg('noMatchVoice')};
+try{r.start()}catch(e){setMsg('noMatchVoice')}
+}
+
+function loc(){
+if(!navigator.geolocation){setMsg('noGeo');return}
+setMsg('getting');
+navigator.geolocation.getCurrentPosition(async pos=>{
+try{
+setMsg('finding');
+const u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat='+pos.coords.latitude+'&lon='+pos.coords.longitude;
+const r=await fetch(u);
+if(!r.ok)throw 0;
+const a=(await r.json()).address||{};
+if(a.state!=='Karnataka'){setMsg('notKa');return}
+const d=matchDistrict(a.state_district||a.county);
+if(!d){setMsg('noMatch');return}
+$('district').value=d;
+setMsg('found',d);
+show();
+}catch(e){setMsg('fail')}
+},()=>setMsg('blocked'));
+}
+
+setLang(lang);
+</script>
+</body></html>
 
 
