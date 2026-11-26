@@ -16,6 +16,9 @@ label{font-size:14px;color:#444}
 select{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px;background:#fff;color:#1b1b1b}
 button{width:100%;padding:12px;background:#2e7d32;color:#fff;border:0;border-radius:8px;font-size:17px}
 button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:6px}
+button.sm{width:auto;padding:5px 14px;font-size:14px;margin-top:6px;background:#fff;color:#2e7d32;border:2px solid #2e7d32}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row button{flex:1;padding:8px;font-size:15px;margin:0}
 #msg{font-size:13px;color:#555;margin:6px 0 14px;min-height:16px}
 .alt{margin-top:8px;color:#555;line-height:1.6}
 details{border-bottom:1px solid #eee;padding:8px 0}
@@ -35,6 +38,7 @@ footer{text-align:center;font-size:12px;color:#777;padding:0 12px 20px}
 <main>
 <div class="card">
 <button class="loc" id="locBtn" onclick="loc()"></button>
+<button class="loc" id="micBtn" onclick="listen()"></button>
 <div id="msg"></div>
 <label id="distLabel"></label>
 <select id="district" onchange="show()"></select>
@@ -52,11 +56,12 @@ const T={
 en:{
 sub:'Crops grown in your district',
 locBtn:'📍 Use my location',
+micBtn:'🎤 Speak',
 distLabel:'District',
 pick:'Select district',
 showBtn:'Show crops',
-foot:'Learning project, not agronomic advice<br>Location is sent to OpenStreetMap. District lookup © OpenStreetMap contributors.',
-intro:'Finds your Karnataka district. Please check it.',
+foot:'Learning project, not agronomic advice<br>Location is sent to OpenStreetMap. Voice input is processed by your browser’s speech service. District lookup © OpenStreetMap contributors.',
+intro:'Use location, or tap Speak and say a district or crop name.',
 noGeo:'Location is not supported on this device.',
 getting:'Getting your location…',
 finding:'Finding your district…',
@@ -78,16 +83,26 @@ rain:'Yearly rainfall',
 npk:'Fertilizer N : P : K',
 varies:'Varies',
 noInfo:'Other values vary by crop, no single value.',
-infoNote:'Approximate typical values and seasons, not verified for each district. Sowing time changes with irrigation and local weather. NPK is a usual fertilizer dose, not a soil level. Do a soil test before applying fertilizer.'
+infoNote:'Approximate typical values and seasons, not verified for each district. Sowing time changes with irrigation and local weather. NPK is a usual fertilizer dose, not a soil level. Do a soil test before applying fertilizer.',
+listenBtn:'🔊 Read aloud',
+stopBtn:'⏹ Stop',
+listening:'Listening… say a district or crop name.',
+heard:'Heard: ',
+noMatchVoice:'Sorry, I did not catch a district or crop name. Try saying “Hassan” or “rice”.',
+noSpeech:'Voice input is not supported in this browser. Try Chrome.',
+noTts:'Reading aloud is not supported on this device.',
+micDenied:'Microphone blocked. Allow microphone access and try again.',
+noVoiceHint:''
 },
 kn:{
 sub:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯಲ್ಲಿ ಬೆಳೆಯುವ ಬೆಳೆಗಳು',
 locBtn:'📍 ನನ್ನ ಸ್ಥಳ ಬಳಸಿ',
+micBtn:'🎤 ಮಾತನಾಡಿ',
 distLabel:'ಜಿಲ್ಲೆ',
 pick:'ಜಿಲ್ಲೆ ಆಯ್ಕೆಮಾಡಿ',
 showBtn:'ಬೆಳೆಗಳನ್ನು ತೋರಿಸಿ',
-foot:'ಇದು ಕಲಿಕೆಯ ಯೋಜನೆ, ಕೃಷಿ ಸಲಹೆಯಲ್ಲ<br>ನಿಮ್ಮ ಸ್ಥಳವನ್ನು OpenStreetMap ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಜಿಲ್ಲೆ ಹುಡುಕಾಟ © OpenStreetMap ಕೊಡುಗೆದಾರರು.',
-intro:'ನಿಮ್ಮ ಕರ್ನಾಟಕ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕುತ್ತದೆ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.',
+foot:'ಇದು ಕಲಿಕೆಯ ಯೋಜನೆ, ಕೃಷಿ ಸಲಹೆಯಲ್ಲ<br>ನಿಮ್ಮ ಸ್ಥಳವನ್ನು OpenStreetMap ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಅನ್ನು ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನ ಸ್ಪೀಚ್ ಸೇವೆ ಸಂಸ್ಕರಿಸುತ್ತದೆ. ಜಿಲ್ಲೆ ಹುಡುಕಾಟ © OpenStreetMap ಕೊಡುಗೆದಾರರು.',
+intro:'ಸ್ಥಳ ಬಳಸಿ, ಅಥವಾ “ಮಾತನಾಡಿ” ಒತ್ತಿ ಜಿಲ್ಲೆ ಅಥವಾ ಬೆಳೆಯ ಹೆಸರು ಹೇಳಿ.',
 noGeo:'ಈ ಸಾಧನದಲ್ಲಿ ಸ್ಥಳ ಸೌಲಭ್ಯ ಲಭ್ಯವಿಲ್ಲ.',
 getting:'ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪಡೆಯಲಾಗುತ್ತಿದೆ…',
 finding:'ನಿಮ್ಮ ಜಿಲ್ಲೆಯನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…',
@@ -109,7 +124,35 @@ rain:'ವಾರ್ಷಿಕ ಮಳೆ',
 npk:'ರಸಗೊಬ್ಬರ N : P : K',
 varies:'ಬದಲಾಗುತ್ತದೆ',
 noInfo:'ಉಳಿದ ಮೌಲ್ಯಗಳು ಬೆಳೆಗೆ ಅನುಗುಣವಾಗಿ ಬದಲಾಗುತ್ತವೆ, ಒಂದೇ ಮೌಲ್ಯ ಇಲ್ಲ.',
-infoNote:'ಇವು ಅಂದಾಜು ಸಾಮಾನ್ಯ ಮೌಲ್ಯಗಳು ಮತ್ತು ಋತುಗಳು, ಜಿಲ್ಲೆವಾರು ಪರಿಶೀಲಿಸಿಲ್ಲ. ಬಿತ್ತನೆ ಸಮಯ ನೀರಾವರಿ ಮತ್ತು ಸ್ಥಳೀಯ ಹವಾಮಾನದ ಮೇಲೆ ಬದಲಾಗುತ್ತದೆ. NPK ಎಂದರೆ ಸಾಮಾನ್ಯ ಗೊಬ್ಬರದ ಪ್ರಮಾಣ, ಮಣ್ಣಿನ ಮಟ್ಟ ಅಲ್ಲ. ಗೊಬ್ಬರ ಹಾಕುವ ಮುನ್ನ ಮಣ್ಣಿನ ಪರೀಕ್ಷೆ ಮಾಡಿಸಿ.'
+infoNote:'ಇವು ಅಂದಾಜು ಸಾಮಾನ್ಯ ಮೌಲ್ಯಗಳು ಮತ್ತು ಋತುಗಳು, ಜಿಲ್ಲೆವಾರು ಪರಿಶೀಲಿಸಿಲ್ಲ. ಬಿತ್ತನೆ ಸಮಯ ನೀರಾವರಿ ಮತ್ತು ಸ್ಥಳೀಯ ಹವಾಮಾನದ ಮೇಲೆ ಬದಲಾಗುತ್ತದೆ. NPK ಎಂದರೆ ಸಾಮಾನ್ಯ ಗೊಬ್ಬರದ ಪ್ರಮಾಣ, ಮಣ್ಣಿನ ಮಟ್ಟ ಅಲ್ಲ. ಗೊಬ್ಬರ ಹಾಕುವ ಮುನ್ನ ಮಣ್ಣಿನ ಪರೀಕ್ಷೆ ಮಾಡಿಸಿ.',
+listenBtn:'🔊 ಓದಿ ಹೇಳಿ',
+stopBtn:'⏹ ನಿಲ್ಲಿಸಿ',
+listening:'ಕೇಳುತ್ತಿದೆ… ಜಿಲ್ಲೆ ಅಥವಾ ಬೆಳೆಯ ಹೆಸರು ಹೇಳಿ.',
+heard:'ಕೇಳಿಸಿದ್ದು: ',
+noMatchVoice:'ಕ್ಷಮಿಸಿ, ಜಿಲ್ಲೆ ಅಥವಾ ಬೆಳೆಯ ಹೆಸರು ಅರ್ಥವಾಗಲಿಲ್ಲ. “ಹಾಸನ” ಅಥವಾ “ಭತ್ತ” ಎಂದು ಹೇಳಿ ನೋಡಿ.',
+noSpeech:'ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಬೆಂಬಲಿಸುವುದಿಲ್ಲ. Chrome ಬಳಸಿ.',
+noTts:'ಈ ಸಾಧನದಲ್ಲಿ ಧ್ವನಿಯಲ್ಲಿ ಓದುವ ಸೌಲಭ್ಯ ಇಲ್ಲ.',
+micDenied:'ಮೈಕ್ರೋಫೋನ್ ಅನುಮತಿ ಇಲ್ಲ. ಅನುಮತಿ ನೀಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+noVoiceHint:'ಧ್ವನಿ ಕೇಳಿಸದಿದ್ದರೆ, ಫೋನ್ ಸೆಟ್ಟಿಂಗ್ಸ್‌ನ ಟೆಕ್ಸ್ಟ್-ಟು-ಸ್ಪೀಚ್‌ನಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ.'
+}};
+
+// Words used only when reading aloud
+const SP={
+en:{
+temp:(a,b)=>a+' to '+b+' degrees Celsius',
+hum:(a,b)=>a+' to '+b+' percent',
+rain:(a,b)=>a+' to '+b+' millimetres',
+ph:(a,b)=>a+' to '+b,
+phWord:'pH',fert:'Fertilizer',n:'nitrogen',p:'phosphorus',k:'potassium',
+units:{kgha:'kilograms per hectare',kgpalm:'kilograms per palm per year',gpalm:'grams per palm per year',gtree:'grams per tree per year',gvine:'grams per vine per year',gplant:'grams per plant'}
+},
+kn:{
+temp:(a,b)=>a+' ರಿಂದ '+b+' ಡಿಗ್ರಿ ಸೆಲ್ಸಿಯಸ್',
+hum:(a,b)=>'ಶೇಕಡಾ '+a+' ರಿಂದ '+b,
+rain:(a,b)=>a+' ರಿಂದ '+b+' ಮಿಲಿಮೀಟರ್',
+ph:(a,b)=>a+' ರಿಂದ '+b,
+phWord:'ಪಿಎಚ್',fert:'ರಸಗೊಬ್ಬರ',n:'ಸಾರಜನಕ',p:'ರಂಜಕ',k:'ಪೊಟ್ಯಾಶ್',
+units:{kgha:'ಕಿಲೋಗ್ರಾಂ ಪ್ರತಿ ಹೆಕ್ಟೇರ್',kgpalm:'ಕಿಲೋಗ್ರಾಂ ಪ್ರತಿ ಮರಕ್ಕೆ ವರ್ಷಕ್ಕೆ',gpalm:'ಗ್ರಾಂ ಪ್ರತಿ ಮರಕ್ಕೆ ವರ್ಷಕ್ಕೆ',gtree:'ಗ್ರಾಂ ಪ್ರತಿ ಮರಕ್ಕೆ ವರ್ಷಕ್ಕೆ',gvine:'ಗ್ರಾಂ ಪ್ರತಿ ಬಳ್ಳಿಗೆ ವರ್ಷಕ್ಕೆ',gplant:'ಗ್ರಾಂ ಪ್ರತಿ ಗಿಡಕ್ಕೆ'}
 }};
 
 // Seasons: K = Kharif, R = Rabi, S = Summer, Y = year-round / perennial
@@ -229,11 +272,13 @@ const DISTRICTS={
 };
 // Old or alternative spellings
 const OTHER_NAMES={bagalkot:'Bagalkote',bellary:'Ballari',belgaum:'Belagavi',bangalore:'Bengaluru Urban','bangalore urban':'Bengaluru Urban',bengaluru:'Bengaluru Urban','bangalore rural':'Bengaluru North','bengaluru rural':'Bengaluru North',ramanagara:'Bengaluru South',ramanagaram:'Bengaluru South',chamrajanagar:'Chamarajanagar',chamarajanagara:'Chamarajanagar',chikkaballapur:'Chikkaballapura',chikballapur:'Chikkaballapura',chikmagalur:'Chikkamagaluru',davangere:'Davanagere',dharwada:'Dharwad',gadaga:'Gadag',gulbarga:'Kalaburagi',coorg:'Kodagu',koppala:'Koppal',mysore:'Mysuru',raichuru:'Raichur',shimoga:'Shivamogga',tumkur:'Tumakuru',bijapur:'Vijayapura',yadagiri:'Yadgir'};
+// Extra spellings that speech recognition often produces
+const VOICE_ALIASES={hasan:'Hassan',kalburgi:'Kalaburagi',chikmangalur:'Chikkamagaluru','dakshin kannada':'Dakshina Kannada','uttar kannada':'Uttara Kannada',banglore:'Bengaluru Urban',mangalore:'Dakshina Kannada',hubli:'Dharwad'};
 const CHECKED=['Hassan','Chikkamagaluru'];
 
 let lang='en';
 try{lang=localStorage.getItem('lang')==='kn'?'kn':'en'}catch(e){}
-let msgKey='intro',msgArg='',outOpen=false;
+let msgKey='intro',msgArg='',outOpen=false,view={k:'d'};
 
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const t=k=>T[lang][k];
@@ -242,7 +287,10 @@ const distName=d=>lang==='kn'?(DISTRICTS_KN[d]||d):d;
 
 function setMsg(k,arg){msgKey=k;msgArg=arg||'';renderMsg()}
 function renderMsg(){
-$('msg').textContent=msgKey==='found'?t('found')+distName(msgArg)+t('check'):t(msgKey);
+const m=$('msg');
+if(msgKey==='found')m.textContent=t('found')+distName(msgArg)+t('check');
+else if(msgKey==='heard')m.textContent=t('heard')+msgArg;
+else m.textContent=t(msgKey);
 }
 
 function buildSelect(){
@@ -254,6 +302,7 @@ s.value=cur;
 }
 
 function setLang(l){
+stopSpeak();
 lang=l;
 try{localStorage.setItem('lang',l)}catch(e){}
 document.documentElement.lang=l;
@@ -261,12 +310,13 @@ $('b-en').className=l==='en'?'on':'';
 $('b-kn').className=l==='kn'?'on':'';
 $('sub').textContent=t('sub');
 $('locBtn').textContent=t('locBtn');
+$('micBtn').textContent=t('micBtn');
 $('distLabel').textContent=t('distLabel');
 $('showBtn').textContent=t('showBtn');
 $('foot').innerHTML=t('foot');
 buildSelect();
 renderMsg();
-if(outOpen)show();
+if(outOpen){if(view.k==='c')showCrop(view.c);else show()}
 }
 
 function matchDistrict(name){
@@ -282,8 +332,9 @@ return '📅 <b>'+t('season')+':</b> '+names+'<br>';
 }
 
 function infoHTML(c){
+const btn='<br><button class="sm" onclick="speakCrop(\''+c+'\')">'+t('listenBtn')+'</button>';
 const i=INFO[c];
-if(!i)return '<div class="info">'+seasonLine(c)+t('noInfo')+'</div>';
+if(!i)return '<div class="info">'+seasonLine(c)+t('noInfo')+btn+'</div>';
 const n=i[8];
 const npk=n?n[0]+' : '+n[1]+' : '+n[2]+' '+UNITS[lang][n[3]]:t('varies');
 return '<div class="info">'+seasonLine(c)+
@@ -291,39 +342,65 @@ return '<div class="info">'+seasonLine(c)+
 '💧 <b>'+t('hum')+':</b> '+i[2]+'–'+i[3]+' %<br>'+
 '🌧️ <b>'+t('rain')+':</b> '+i[4]+'–'+i[5]+' mm<br>'+
 '🧪 <b>pH:</b> '+i[6]+'–'+i[7]+'<br>'+
-'🌱 <b>'+t('npk')+':</b> '+npk+'</div>';
+'🌱 <b>'+t('npk')+':</b> '+npk+btn+'</div>';
 }
 
 function show(){
 const o=$('out'),d=$('district').value;
+view={k:'d'};
 o.style.display='block';outOpen=true;
 if(!d){o.innerHTML=t('choose');return}
 const list=DISTRICTS[d].split(',').map(c=>'<details><summary>'+(E[c]||'🌱')+' '+cropName(c)+'</summary>'+infoHTML(c)+'</details>');
 const note=CHECKED.includes(d)?t('checked'):t('unver');
-o.innerHTML='<b>'+T[lang].title(distName(d))+'</b><div class="alt">'+list.join('')+'<small>'+t('tap')+'<br>'+note+'</small><br><small>'+t('infoNote')+'</small></div>';
+o.innerHTML='<div class="row"><button onclick="readList()">'+t('listenBtn')+'</button><button onclick="stopSpeak()">'+t('stopBtn')+'</button></div>'+
+'<b>'+T[lang].title(distName(d))+'</b><div class="alt">'+list.join('')+'<small>'+t('tap')+'<br>'+note+'</small><br><small>'+t('infoNote')+'</small></div>';
 }
 
-function loc(){
-if(!navigator.geolocation){setMsg('noGeo');return}
-setMsg('getting');
-navigator.geolocation.getCurrentPosition(async pos=>{
-try{
-setMsg('finding');
-const u='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat='+pos.coords.latitude+'&lon='+pos.coords.longitude;
-const r=await fetch(u);
-if(!r.ok)throw 0;
-const a=(await r.json()).address||{};
-if(a.state!=='Karnataka'){setMsg('notKa');return}
-const d=matchDistrict(a.state_district||a.county);
-if(!d){setMsg('noMatch');return}
-$('district').value=d;
-setMsg('found',d);
-show();
-}catch(e){setMsg('fail')}
-},()=>setMsg('blocked'));
+function showCrop(c){
+const o=$('out');
+view={k:'c',c:c};
+o.style.display='block';outOpen=true;
+o.innerHTML='<div class="row"><button onclick="stopSpeak()">'+t('stopBtn')+'</button></div><b>'+(E[c]||'🌱')+' '+cropName(c)+'</b><div class="alt">'+infoHTML(c)+'<small>'+t('infoNote')+'</small></div>';
 }
 
-setLang(lang);
-</script>
-</body></html>
+/* ---------- Voice: read aloud ---------- */
+let voices=[];
+function loadVoices(){if('speechSynthesis' in window)voices=speechSynthesis.getVoices()}
+loadVoices();
+if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=loadVoices;
+
+function speak(text){
+if(!('speechSynthesis' in window)){setMsg('noTts');return}
+speechSynthesis.cancel();
+const u=new SpeechSynthesisUtterance(text);
+const code=lang==='kn'?'kn-IN':'en-IN';
+u.lang=code;
+const v=voices.find(x=>x.lang.replace('_','-').toLowerCase()===code.toLowerCase())||voices.find(x=>x.lang.toLowerCase().startsWith(lang));
+if(v)u.voice=v;
+else if(voices.length&&t('noVoiceHint'))setMsg('noVoiceHint');
+u.rate=0.9;
+speechSynthesis.speak(u);
+}
+function stopSpeak(){if('speechSynthesis' in window)speechSynthesis.cancel()}
+
+function speechList(d){
+return T[lang].title(distName(d))+'. '+DISTRICTS[d].split(',').map(cropName).join(', ');
+}
+function speechInfo(c){
+const sp=SP[lang];
+let s=cropName(c)+'. ';
+const sn=SEASONS[c];
+if(sn)s+=t('season')+': '+sn.split('').map(k=>SEASON_NAMES[lang][k].replace(/\s*\(.*?\)/g,'').replace(/\//g,',')).join(', ')+'. ';
+const i=INFO[c];
+if(!i)return s+t('noInfo');
+s+=t('temp')+': '+sp.temp(i[0],i[1])+'. ';
+s+=t('hum')+': '+sp.hum(i[2],i[3])+'. ';
+s+=t('rain')+': '+sp.rain(i[4],i[5])+'. ';
+s+=sp.phWord+': '+sp.ph(i[6],i[7])+'. ';
+const n=i[8];
+s+=n?sp.fert+': '+sp.n+' '+n[0]+', '+sp.p+' '+n[1]+', '+sp.k+' '+n[2]+', '+sp.units[n[3]]+'.':sp.fert+': '+t('varies')+'.';
+return s;
+}
+function read
+
 
