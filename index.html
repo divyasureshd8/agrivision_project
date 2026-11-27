@@ -3,38 +3,69 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Agrivision</title>
 <style>
-body{margin:0;font-family:sans-serif;background:#f1f8e9;color:#1b1b1b}
-header{background:#2e7d32;color:#fff;padding:24px 16px;text-align:center}
-header h1{margin:0;font-size:28px}
-header p{margin:6px 0 0;opacity:.9}
-.lang{display:flex;gap:8px;justify-content:center;margin-top:14px}
-.lang button{width:auto;padding:6px 18px;font-size:15px;background:transparent;color:#fff;border:2px solid #fff;border-radius:20px}
-.lang button.on{background:#fff;color:#2e7d32;font-weight:bold}
-main{max-width:420px;margin:-12px auto 30px;padding:0 16px}
-.card{background:#fff;border-radius:14px;padding:18px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-label{font-size:14px;color:#444}
-select,input{width:100%;padding:10px;margin:4px 0 14px;box-sizing:border-box;border:1px solid #bbb;border-radius:8px;font-size:16px;background:#fff;color:#1b1b1b}
-button{width:100%;padding:12px;background:#2e7d32;color:#fff;border:0;border-radius:8px;font-size:17px}
-button.loc{background:#fff;color:#2e7d32;border:2px solid #2e7d32;margin-bottom:6px}
-button.sm{width:auto;padding:5px 14px;font-size:14px;margin-top:6px;background:#fff;color:#2e7d32;border:2px solid #2e7d32}
-.row{display:flex;gap:8px;margin-bottom:8px}
-.row button{flex:1;padding:8px;font-size:15px;margin:0}
+:root{--forest:#1f3d2b;--leaf:#3f7a4a;--sun:#f2b134;--clay:#c4552f;--cream:#fbf5e6;--paper:#fffdf7;--ink:#2a2418;--soil:#6b4a2f;--line:#e8dcc0}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,'Segoe UI','Noto Sans Kannada',Roboto,sans-serif;background-color:var(--cream);background-image:radial-gradient(rgba(107,74,47,.09) 1px,transparent 1.3px);background-size:16px 16px;color:var(--ink)}
+header{position:relative;overflow:hidden;text-align:center;padding:30px 16px 78px;background:linear-gradient(180deg,#fff0c4 0%,#f8d37a 60%,#f2b134 100%)}
+header::before{content:"";position:absolute;top:16px;right:6%;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6d6,#ffd25e 55%,#f2a51a);box-shadow:0 0 0 9px rgba(255,255,255,.25),0 0 0 20px rgba(255,255,255,.14);animation:glow 4s ease-in-out infinite}
+header h1,header p,.lang{position:relative}
+header h1{margin:0;font-family:Georgia,'Noto Serif Kannada',serif;font-size:32px;letter-spacing:-.01em;color:var(--forest)}
+header h1 span{color:var(--clay);font-style:italic}
+header p{margin:6px 0 14px;color:var(--soil);font-size:15px}
+.lang{display:inline-flex;gap:2px;padding:4px;background:rgba(255,255,255,.6);border-radius:999px;box-shadow:inset 0 0 0 1.5px rgba(31,61,43,.15)}
+.lang button{width:auto;padding:7px 18px;font-size:15px;background:transparent;color:var(--forest);border-radius:999px;box-shadow:none;font-weight:600}
+.lang button:active{transform:none}
+.lang button.on{background:var(--forest);color:var(--cream)}
+.hills{position:absolute;left:0;bottom:-1px;width:100%;height:64px;display:block}
+main{max-width:440px;margin:-14px auto 30px;padding:0 16px;position:relative}
+.card{position:relative;background:var(--paper);border:2px solid var(--line);border-top:8px solid var(--leaf);border-radius:20px;padding:18px;margin-top:18px;box-shadow:0 6px 0 rgba(107,74,47,.08),0 12px 24px rgba(107,74,47,.08);animation:rise .45s ease both}
+main .card:nth-child(2){border-top-color:var(--soil)}
+#out{border-top-color:var(--sun)}
+#land{border-top:0;padding-top:32px}
+#land::before{content:"";position:absolute;left:-2px;right:-2px;top:-2px;height:14px;border-radius:20px 20px 0 0;background:linear-gradient(90deg,#5a3d26 0 25%,#7d5738 25% 50%,#a07448 50% 75%,#c9a06a 75%)}
+label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soil);margin-top:4px}
+#soilTitle{font-family:Georgia,'Noto Serif Kannada',serif;font-size:19px;color:var(--forest)}
+select,input{width:100%;padding:12px;margin:6px 0 14px;border:2px solid var(--line);border-radius:12px;font-size:16px;font-family:inherit;background:#fff;color:var(--ink)}
+select:focus,input:focus{outline:0;border-color:var(--leaf);box-shadow:0 0 0 4px rgba(63,122,74,.18)}
+button{width:100%;padding:14px;background:var(--forest);color:var(--cream);border:0;border-radius:999px;font-size:17px;font-weight:600;font-family:inherit;box-shadow:0 3px 0 #12261a;transition:transform .08s,box-shadow .08s}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #12261a}
+button.loc{background:var(--paper);color:var(--forest);border:2px solid var(--forest);box-shadow:none;margin-bottom:10px}
+#locBtn{background:var(--clay);color:#fff;border:0;box-shadow:0 3px 0 #8e3a1d;animation:ring 2.6s infinite}
+button.sm{width:auto;padding:6px 16px;font-size:14px;margin-top:8px;background:var(--paper);color:var(--forest);border:2px solid var(--forest);box-shadow:none}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.row button{flex:1;padding:9px;font-size:15px;box-shadow:none;background:var(--paper);color:var(--forest);border:2px solid var(--forest)}
 .row input{flex:1;min-width:0}
-#msg{font-size:13px;color:#555;margin:6px 0 14px;min-height:16px}
-.alt{margin-top:8px;color:#555;line-height:1.6}
-details{border-bottom:1px solid #eee;padding:8px 0}
-summary{font-size:17px;color:#1b1b1b}
-.info{font-size:14px;color:#444;line-height:1.8;padding:6px 0 4px 8px}
-.info b{color:#2e7d32}
-footer{text-align:center;font-size:12px;color:#777;padding:0 12px 20px}
+#msg{font-size:13px;line-height:1.5;color:var(--soil);background:#f6efd6;border-left:4px solid var(--sun);border-radius:4px 10px 10px 4px;padding:8px 12px;margin:2px 0 16px}
+#msg:empty{display:none}
+.alt{margin-top:10px;color:var(--ink);line-height:1.6}
+.alt small,.info small{color:#7a6a50;line-height:1.5}
+details{border:1.5px dashed #cdbd95;border-radius:14px;padding:0 14px;margin:10px 0;background:#fffaf0;transition:background .2s}
+details[open]{border-style:solid;border-color:var(--leaf);background:#f4f9ee}
+summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:13px 0;font-family:Georgia,'Noto Serif Kannada',serif;font-size:17px;font-weight:700;color:var(--forest)}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"›";margin-left:auto;font-size:24px;line-height:1;color:var(--clay);transition:transform .2s}
+details[open] summary::after{transform:rotate(90deg)}
+.info{font-size:14px;line-height:1.9;color:#3a3220;padding:0 0 12px 2px}
+.info b{color:var(--leaf)}
+footer{text-align:center;font-size:12px;line-height:1.6;color:#7a6a50;padding:6px 20px 28px;max-width:440px;margin:0 auto}
+footer::before{content:"🌾 · 🌱 · 🌾";display:block;letter-spacing:.3em;margin-bottom:8px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes ring{0%{box-shadow:0 3px 0 #8e3a1d,0 0 0 0 rgba(196,85,47,.5)}70%{box-shadow:0 3px 0 #8e3a1d,0 0 0 14px rgba(196,85,47,0)}100%{box-shadow:0 3px 0 #8e3a1d,0 0 0 0 rgba(196,85,47,0)}}
+@keyframes glow{50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
 <header>
-<h1>🌱 Agrivision</h1>
+<h1>🌱 Agri<span>vision</span></h1>
 <p id="sub"></p>
 <div class="lang">
 <button id="b-en" onclick="setLang('en')">English</button>
 <button id="b-kn" onclick="setLang('kn')">ಕನ್ನಡ</button>
 </div>
+<svg class="hills" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden="true">
+<path d="M0 30 Q80 5 160 28 T320 22 T400 30 V60 H0Z" fill="#9bc07f"/>
+<path d="M0 42 Q100 18 200 40 T400 36 V60 H0Z" fill="#4f8a55"/>
+<path d="M0 52 Q120 36 230 50 T400 46 V60 H0Z" fill="#fbf5e6"/>
+</svg>
 </header>
 <main>
 <div class="card">
